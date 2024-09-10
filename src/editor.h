@@ -1,11 +1,19 @@
 #include <termios.h>
+#include "keybinds.h"
 
-#define CTRL_KEY(k) ((k) & 0x1f)
 #define ABUF_INIT {NULL, 0}
 #define EDITOR_VERSION "0.0.1"
 
 typedef struct {
-  int screenRows, screenCols;
+  int size;
+  char *chars;
+} erow;
+
+typedef struct {
+  int cursor_x, cursor_y;
+  int screen_rows, screen_cols;
+  erow row;
+  int numrows;
   struct termios org_termios;
 } editorconf ;
 
@@ -16,6 +24,7 @@ typedef struct {
 
 // -- append Buffer methods --
 void abAppend(abuf *, const char *, int);
+void abFree(abuf *);
 
 // --editor init functions --
 void die(const char *s);
@@ -29,7 +38,8 @@ int getCursorPosition(int *, int *);
 
 // -- editor prcs --
 void editorClearScreen();
-char editorReadKey();
-void editorProcessKeyPress();
 void editorDrawRows(abuf *);
 void editorRefreshScreen();
+int editorReadKey();
+void editorProcessKeyPress();
+void editorMoveCursor(int);
