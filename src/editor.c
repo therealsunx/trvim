@@ -1,15 +1,19 @@
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "editor.h"
+#include "settings.h"
 
 // -- data --
 editorconf editor;
+settingsType settings = _DEF_SETTINGS;
 
 // -- definitions --
 void abAppend(abuf *ab, const char *s, int len) {
@@ -57,6 +61,8 @@ void initEditor() {
   editor.cursor_x = 0;
   editor.cursor_y = 0;
   editor.numrows = 0;
+  editor.offset = 0;
+  editor.row = NULL;
 
   if (getWindowSize(&editor.screen_rows, &editor.screen_cols) == -1)
     die("invalid window size");
@@ -122,14 +128,18 @@ void addWelcomeMsg(abuf *ab) {
 
 void editorDrawRows(abuf *ab) {
   for (int y = 0; y < editor.screen_rows; y++) {
-    if (y == editor.screen_rows / 3)
-      addWelcomeMsg(ab);
-    else
-      abAppend(ab, "~", 1);
+
+    if((y+editor.offset) >= editor.numrows){
+      if (editor.numrows==0 && y == editor.screen_rows / 3) addWelcomeMsg(ab);
+      else abAppend(ab, "~", 1);
+    } else {
+      int len = editor.row[y+editor.offset].size;
+      if(len > editor.screen_cols) len = editor.screen_cols;
+      abAppend(ab, editor.row[y+editor.offset].chars, len);
+    }
 
     abAppend(ab, "\x1b[K", 3); // clear the line before drawing
-    if (y < editor.screen_rows - 1)
-      abAppend(ab, "\r\n", 2);
+    if (y < editor.screen_rows - 1) abAppend(ab, "\r\n", 2);
   }
 }
 
@@ -231,20 +241,46 @@ void editorProcessKeyPress() {
 void editorMoveCursor(int key) {
   switch (key) {
     case ARROW_LEFT:
-      if (editor.cursor_x != 0)
-        editor.cursor_x--;
+      if (editor.cursor_x != 0) editor.cursor_x--;
       break;
     case ARROW_RIGHT:
-      if (editor.cursor_x != editor.screen_cols - 1)
-        editor.cursor_x++;
+      if (editor.cursor_x != editor.screen_cols - 1) editor.cursor_x++;
       break;
     case ARROW_UP:
-      if (editor.cursor_y != 0)
-        editor.cursor_y--;
+      if(editor.cursor_y > settings.scrollpadding) editor.cursor_y--;
+      else if(editor.offset > 0) editor.offset--;
+      else if(editor.cursor_y>0) editor.cursor_y--;
       break;
     case ARROW_DOWN:
-      if (editor.cursor_y != editor.screen_rows - 1)
-        editor.cursor_y++;
+      if (editor.cursor_y < editor.screen_rows-1-settings.scrollpadding) editor.cursor_y++;
+      else if (editor.offset < editor.numrows-editor.screen_rows) editor.offset++;
+      else if (editor.cursor_y<editor.screen_rows-1) editor.cursor_y++;
       break;
   }
+}
+
+void editorAppendRows(char *s, size_t len){
+  editor.row = realloc(editor.row, sizeof(erow) * (editor.numrows+1));
+
+  editor.row[editor.numrows].size = len;
+  editor.row[editor.numrows].chars = malloc(len+1);
+  memcpy(editor.row[editor.numrows].chars, s, len);
+  editor.row[editor.numrows].chars[len]='\0';
+  editor.numrows++;
+}
+
+void editorOpen(char* filename){
+  FILE *fp = fopen(filename, "r");
+  if(!fp) die("failed to open file");
+
+  char *line = NULL;
+  size_t lcap = 0;
+  ssize_t llen;
+
+  while((llen = getline(&line, &lcap, fp)) != -1){
+    while(llen>0 && (line[llen-1]=='\n' || line[llen-1]=='\r')) llen--;
+    editorAppendRows(line, llen);
+  }
+  free(line);
+  fclose(fp);
 }

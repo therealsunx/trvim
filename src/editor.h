@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <termios.h>
 #include "keybinds.h"
 
@@ -12,8 +13,8 @@ typedef struct {
 typedef struct {
   int cursor_x, cursor_y;
   int screen_rows, screen_cols;
-  erow row;
-  int numrows;
+  erow *row;
+  int numrows, offset;
   struct termios org_termios;
 } editorconf ;
 
@@ -23,23 +24,25 @@ typedef struct {
 } abuf;
 
 // -- append Buffer methods --
-void abAppend(abuf *, const char *, int);
-void abFree(abuf *);
+void abAppend(abuf *appendbuffer, const char *string, int length);
+void abFree(abuf *appendbuffer);
 
 // --editor init functions --
-void die(const char *s);
+void die(const char *message);
 void disableRawMode();
 void enableRawMode();
 void initEditor();
 
 // -- utils: getters --
-int getWindowSize(int *, int *);
-int getCursorPosition(int *, int *);
+int getWindowSize(int *rows, int *cols);
+int getCursorPosition(int *x, int *y);
 
 // -- editor prcs --
 void editorClearScreen();
-void editorDrawRows(abuf *);
+void editorDrawRows(abuf *appendbuffer);
 void editorRefreshScreen();
 int editorReadKey();
 void editorProcessKeyPress();
-void editorMoveCursor(int);
+void editorMoveCursor(int charKey);
+void editorAppendRows(char *s, size_t len);
+void editorOpen(char* filename);
