@@ -241,13 +241,15 @@ void editorProcessKeyPress() {
 }
 
 void editorMoveCursor(int key) {
+  erow *row = editor.cursor_y >= editor.numrows ? NULL : &editor.row[editor.cursor_y];
+
   switch (key) {
     case ARROW_LEFT:
       if (editor.cursor_x > 0) editor.cursor_x--;
       editor.st_cx = editor.cursor_x;
       break;
     case ARROW_RIGHT:
-      if (editor.cursor_x < editor.row[editor.cursor_y].size-1) editor.cursor_x++;
+      if (row && editor.cursor_x < row->size-1) editor.cursor_x++;
       editor.st_cx = editor.cursor_x;
       break;
     case ARROW_UP:
@@ -256,6 +258,13 @@ void editorMoveCursor(int key) {
     case ARROW_DOWN:
       if (editor.cursor_y<editor.numrows-1) editor.cursor_y++;
       break;
+  }
+
+  // cursor state preservation
+  if (editor.cursor_y < editor.numrows){
+    row = &editor.row[editor.cursor_y];
+    editor.cursor_x = editor.st_cx;
+    if(editor.cursor_x >= row->size) editor.cursor_x = row->size==0?0:row->size-1;
   }
 }
 
@@ -270,14 +279,9 @@ void editorScroll(){
     if(editor.offsety<0) editor.offsety = 0;
   }
 
-  // cursor state preservation
-  int _lsz = editor.row[editor.cursor_y].size-1; 
-  editor.cursor_x = editor.st_cx;
-  if (editor.cursor_x > _lsz) editor.cursor_x = _lsz;
-
   // horizontal scroll handler
   int _cx = editor.cursor_x-editor.offsetx;
-  if(_cx >= editor.screen_cols) editor.offsetx = editor.cursor_x-editor.screen_cols+1;
+  if(_cx >= editor.screen_cols) editor.offsetx = editor.cursor_x-editor.screen_cols;
   else if(_cx < 0) editor.offsetx = editor.cursor_x;
 }
 
