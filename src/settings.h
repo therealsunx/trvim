@@ -1,4 +1,4 @@
-#define _DEF_SETTINGS {4}
+#define DEF_SETTINGS {4}
 
 typedef struct {
   int scrollpadding;

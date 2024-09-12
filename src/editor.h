@@ -11,10 +11,10 @@ typedef struct {
 } erow;
 
 typedef struct {
-  int cursor_x, cursor_y;
+  int cursor_x, cursor_y, st_cx;
   int screen_rows, screen_cols;
+  int numrows, offsety, offsetx;
   erow *row;
-  int numrows, offset;
   struct termios org_termios;
 } editorconf ;
 
@@ -41,8 +41,9 @@ int getCursorPosition(int *x, int *y);
 void editorClearScreen();
 void editorDrawRows(abuf *appendbuffer);
 void editorRefreshScreen();
-int editorReadKey();
 void editorProcessKeyPress();
 void editorMoveCursor(int charKey);
 void editorAppendRows(char *s, size_t len);
 void editorOpen(char* filename);
+int editorReadKey();
+void editorScroll();

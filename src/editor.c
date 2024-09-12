@@ -13,7 +13,7 @@
 
 // -- data --
 editorconf editor;
-settingsType settings = _DEF_SETTINGS;
+settingsType settings = DEF_SETTINGS;
 
 // -- definitions --
 void abAppend(abuf *ab, const char *s, int len) {
@@ -61,9 +61,9 @@ void initEditor() {
   editor.cursor_x = 0;
   editor.cursor_y = 0;
   editor.numrows = 0;
-  editor.offset = 0;
+  editor.offsetx = 0;
+  editor.offsety = 0;
   editor.row = NULL;
-
   if (getWindowSize(&editor.screen_rows, &editor.screen_cols) == -1)
     die("invalid window size");
 }
@@ -129,13 +129,15 @@ void addWelcomeMsg(abuf *ab) {
 void editorDrawRows(abuf *ab) {
   for (int y = 0; y < editor.screen_rows; y++) {
 
-    if((y+editor.offset) >= editor.numrows){
+    int _fr = y+editor.offsety;
+    if(_fr >= editor.numrows){
       if (editor.numrows==0 && y == editor.screen_rows / 3) addWelcomeMsg(ab);
       else abAppend(ab, "~", 1);
     } else {
-      int len = editor.row[y+editor.offset].size;
+      int len = editor.row[_fr].size - editor.offsetx;
+      if(len < 0) len = 0;
       if(len > editor.screen_cols) len = editor.screen_cols;
-      abAppend(ab, editor.row[y+editor.offset].chars, len);
+      abAppend(ab, &editor.row[_fr].chars[editor.offsetx], len);
     }
 
     abAppend(ab, "\x1b[K", 3); // clear the line before drawing
@@ -144,6 +146,7 @@ void editorDrawRows(abuf *ab) {
 }
 
 void editorRefreshScreen() {
+  editorScroll();
   abuf ab = ABUF_INIT;
 
   abAppend(&ab, "\x1b[?25l", 6); // hide cursor
@@ -152,8 +155,7 @@ void editorRefreshScreen() {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", editor.cursor_y + 1,
-           editor.cursor_x + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", editor.cursor_y-editor.offsety + 1, editor.cursor_x -editor.offsetx + 1);
   abAppend(&ab, buf, strlen(buf));
   abAppend(&ab, "\x1b[?25h", 6); // show the cursor
 
@@ -241,22 +243,42 @@ void editorProcessKeyPress() {
 void editorMoveCursor(int key) {
   switch (key) {
     case ARROW_LEFT:
-      if (editor.cursor_x != 0) editor.cursor_x--;
+      if (editor.cursor_x > 0) editor.cursor_x--;
+      editor.st_cx = editor.cursor_x;
       break;
     case ARROW_RIGHT:
-      if (editor.cursor_x != editor.screen_cols - 1) editor.cursor_x++;
+      if (editor.cursor_x < editor.row[editor.cursor_y].size-1) editor.cursor_x++;
+      editor.st_cx = editor.cursor_x;
       break;
     case ARROW_UP:
-      if(editor.cursor_y > settings.scrollpadding) editor.cursor_y--;
-      else if(editor.offset > 0) editor.offset--;
-      else if(editor.cursor_y>0) editor.cursor_y--;
+      if(editor.cursor_y > 0) editor.cursor_y--;
       break;
     case ARROW_DOWN:
-      if (editor.cursor_y < editor.screen_rows-1-settings.scrollpadding) editor.cursor_y++;
-      else if (editor.offset < editor.numrows-editor.screen_rows) editor.offset++;
-      else if (editor.cursor_y<editor.screen_rows-1) editor.cursor_y++;
+      if (editor.cursor_y<editor.numrows-1) editor.cursor_y++;
       break;
   }
+}
+
+void editorScroll(){
+  int _cy = editor.cursor_y-editor.offsety;
+
+  // vertical scroll handler
+  if(_cy > (editor.screen_rows-1-settings.scrollpadding))
+    editor.offsety = editor.cursor_y-editor.screen_rows+settings.scrollpadding+1;
+  else if(_cy < settings.scrollpadding){
+    editor.offsety = editor.cursor_y-settings.scrollpadding;
+    if(editor.offsety<0) editor.offsety = 0;
+  }
+
+  // cursor state preservation
+  int _lsz = editor.row[editor.cursor_y].size-1; 
+  editor.cursor_x = editor.st_cx;
+  if (editor.cursor_x > _lsz) editor.cursor_x = _lsz;
+
+  // horizontal scroll handler
+  int _cx = editor.cursor_x-editor.offsetx;
+  if(_cx >= editor.screen_cols) editor.offsetx = editor.cursor_x-editor.screen_cols+1;
+  else if(_cx < 0) editor.offsetx = editor.cursor_x;
 }
 
 void editorAppendRows(char *s, size_t len){
