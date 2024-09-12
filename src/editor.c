@@ -60,10 +60,12 @@ void enableRawMode() {
 void initEditor() {
   editor.cursor_x = 0;
   editor.cursor_y = 0;
+  editor.render_x = 0;
   editor.numrows = 0;
-  editor.offsetx = 0;
-  editor.offsety = 0;
+  editor.offset_x = 0;
+  editor.offset_y = 0;
   editor.row = NULL;
+
   if (getWindowSize(&editor.screen_rows, &editor.screen_cols) == -1)
     die("invalid window size");
 }
@@ -129,15 +131,15 @@ void addWelcomeMsg(abuf *ab) {
 void editorDrawRows(abuf *ab) {
   for (int y = 0; y < editor.screen_rows; y++) {
 
-    int _fr = y+editor.offsety;
+    int _fr = y+editor.offset_y;
     if(_fr >= editor.numrows){
       if (editor.numrows==0 && y == editor.screen_rows / 3) addWelcomeMsg(ab);
       else abAppend(ab, "~", 1);
     } else {
-      int len = editor.row[_fr].size - editor.offsetx;
+      int len = editor.row[_fr].rsize - editor.offset_x;
       if(len < 0) len = 0;
       if(len > editor.screen_cols) len = editor.screen_cols;
-      abAppend(ab, &editor.row[_fr].chars[editor.offsetx], len);
+      abAppend(ab, &editor.row[_fr].renderch[editor.offset_x], len);
     }
 
     abAppend(ab, "\x1b[K", 3); // clear the line before drawing
@@ -155,7 +157,7 @@ void editorRefreshScreen() {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", editor.cursor_y-editor.offsety + 1, editor.cursor_x -editor.offsetx + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", editor.cursor_y-editor.offset_y + 1, editor.render_x -editor.offset_x + 1);
   abAppend(&ab, buf, strlen(buf));
   abAppend(&ab, "\x1b[?25h", 6); // show the cursor
 
@@ -268,30 +270,69 @@ void editorMoveCursor(int key) {
   }
 }
 
+int editorCxtoRx(erow *row, int cursor_x){
+  int rx = 0;
+  for(int j=0; j<cursor_x; j++){
+    if(row->chars[j] == '\t')
+      rx += (settings.tabwidth-1) - (rx % settings.tabwidth);
+    rx++;
+  }
+  return rx;
+}
+
 void editorScroll(){
-  int _cy = editor.cursor_y-editor.offsety;
+  int _cy = editor.cursor_y-editor.offset_y;
 
   // vertical scroll handler
   if(_cy > (editor.screen_rows-1-settings.scrollpadding))
-    editor.offsety = editor.cursor_y-editor.screen_rows+settings.scrollpadding+1;
+    editor.offset_y = editor.cursor_y-editor.screen_rows+settings.scrollpadding+1;
   else if(_cy < settings.scrollpadding){
-    editor.offsety = editor.cursor_y-settings.scrollpadding;
-    if(editor.offsety<0) editor.offsety = 0;
+    editor.offset_y = editor.cursor_y-settings.scrollpadding;
+    if(editor.offset_y<0) editor.offset_y = 0;
   }
 
   // horizontal scroll handler
-  int _cx = editor.cursor_x-editor.offsetx;
-  if(_cx >= editor.screen_cols) editor.offsetx = editor.cursor_x-editor.screen_cols;
-  else if(_cx < 0) editor.offsetx = editor.cursor_x;
+  editor.render_x = editor.cursor_y < editor.numrows? editorCxtoRx(&editor.row[editor.cursor_y], editor.cursor_x): 0;
+  int _cx = editor.render_x-editor.offset_x;
+  if(_cx >= editor.screen_cols-1) editor.offset_x = editor.render_x-editor.screen_cols+1;
+  else if(_cx < 0) editor.offset_x = editor.render_x;
+}
+
+void editorUpdateRow(erow *row){
+  //count tabs
+  int tabs = 0;
+  for(int j=0; j<row->size; j++){
+    if(row->chars[j] == '\t') tabs++;
+  }
+
+  free(row->renderch);
+  row->renderch = malloc(row->size+(settings.tabwidth-1)*tabs+1);
+
+  int idx = 0;
+  for(int j=0; j<row->size; j++){
+    if(row->chars[j] == '\t'){
+      row->renderch[idx++] = ' ';
+      while(idx % settings.tabwidth != 0) row->renderch[idx++] = ' ';
+    }else{
+      row->renderch[idx++] = row->chars[j];
+    }
+  }
+
+  row->renderch[idx] = '\0';
+  row->rsize = idx;
 }
 
 void editorAppendRows(char *s, size_t len){
   editor.row = realloc(editor.row, sizeof(erow) * (editor.numrows+1));
 
-  editor.row[editor.numrows].size = len;
-  editor.row[editor.numrows].chars = malloc(len+1);
-  memcpy(editor.row[editor.numrows].chars, s, len);
-  editor.row[editor.numrows].chars[len]='\0';
+  erow *_rw = &editor.row[editor.numrows];
+  _rw->size = len;
+  _rw->chars = malloc(len+1);
+  memcpy(_rw->chars, s, len);
+  _rw->chars[len]='\0';
+  _rw->rsize=0;
+  _rw->renderch=NULL;
+  editorUpdateRow(_rw);
   editor.numrows++;
 }
 

@@ -1,5 +1,5 @@
-#define DEF_SETTINGS {4}
+#define DEF_SETTINGS {4, 4}
 
 typedef struct {
-  int scrollpadding;
+  int scrollpadding, tabwidth;
 } settingsType;

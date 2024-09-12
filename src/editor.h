@@ -6,14 +6,14 @@
 #define EDITOR_VERSION "0.0.1"
 
 typedef struct {
-  int size;
-  char *chars;
+  int size, rsize;
+  char *chars, *renderch;
 } erow;
 
 typedef struct {
-  int cursor_x, cursor_y, st_cx;
+  int cursor_x, cursor_y, st_cx, render_x;
   int screen_rows, screen_cols;
-  int numrows, offsety, offsetx;
+  int numrows, offset_y, offset_x;
   erow *row;
   struct termios org_termios;
 } editorconf ;
@@ -43,7 +43,9 @@ void editorDrawRows(abuf *appendbuffer);
 void editorRefreshScreen();
 void editorProcessKeyPress();
 void editorMoveCursor(int charKey);
+void editorUpdateRow(erow *row);
 void editorAppendRows(char *s, size_t len);
 void editorOpen(char* filename);
 int editorReadKey();
 void editorScroll();
+int editorCxtoRx(erow *row, int cursor_x);
