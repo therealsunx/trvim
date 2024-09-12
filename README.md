@@ -5,6 +5,12 @@ I am attempting to make a text editor, that is similar in use as vim. Let's see 
 A comprehensive text editor with syntax highlighting and few autocompletions for general text editing.
 
 ## TODO
+- absolute and relative line number
+- status msg bar
+    - input prompt
+    - message display
+    - mode indicator
+    - command buffer
 - text editing
 - text wrap
 - bufferize the editor

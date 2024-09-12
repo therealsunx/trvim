@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -65,9 +66,13 @@ void initEditor() {
   editor.offset_x = 0;
   editor.offset_y = 0;
   editor.row = NULL;
+  editor.filename = NULL;
+  editor.statusmsg[0] = '\0';
+  editor.statusmsg_time = 0;
 
   if (getWindowSize(&editor.screen_rows, &editor.screen_cols) == -1)
     die("invalid window size");
+  editor.screen_rows-=2;
 }
 
 int getWindowSize(int *rows, int *cols) {
@@ -143,8 +148,44 @@ void editorDrawRows(abuf *ab) {
     }
 
     abAppend(ab, "\x1b[K", 3); // clear the line before drawing
-    if (y < editor.screen_rows - 1) abAppend(ab, "\r\n", 2);
+    abAppend(ab, "\r\n", 2);
   }
+}
+
+void editorDrawStatusBar(abuf *buf){
+  abAppend(buf, "\x1b[7m", 4);
+
+  char lstatus[80], rstatus[80];
+  int len = snprintf(lstatus, sizeof(lstatus),
+      "%.20s", editor.filename ? editor.filename : "[No name]");
+  if(len > editor.screen_cols) len = editor.screen_cols;
+
+  int rlen = snprintf(rstatus, sizeof(rstatus),
+      "%d,%d", editor.cursor_y, editor.cursor_x);
+
+  abAppend(buf, lstatus, len);
+  for(;len<editor.screen_cols-rlen;len++) abAppend(buf, " ", 1);
+  abAppend(buf, rstatus, rlen);
+
+  abAppend(buf, "\r\n", 2);
+  abAppend(buf, "\x1b[m", 3);
+}
+
+void editorDrawStsMsgBar(abuf *ab){
+  abAppend(ab, "\x1b[K", 3);
+  if(time(NULL) - editor.statusmsg_time < 5){
+    int mlen = strlen(editor.statusmsg);
+    if(mlen > editor.screen_cols) mlen = editor.screen_cols;
+    if(mlen) abAppend(ab, editor.statusmsg, mlen);
+  }
+}
+
+void editorSetStatusMsg(const char *fmt, ...){
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(editor.statusmsg, sizeof(editor.statusmsg), fmt, ap);
+  va_end(ap);
+  editor.statusmsg_time = time(NULL);
 }
 
 void editorRefreshScreen() {
@@ -155,6 +196,8 @@ void editorRefreshScreen() {
   abAppend(&ab, "\x1b[H", 3);    // move cursor to start before drawing
 
   editorDrawRows(&ab);
+  editorDrawStatusBar(&ab);
+  editorDrawStsMsgBar(&ab);
 
   char buf[32];
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", editor.cursor_y-editor.offset_y + 1, editor.render_x -editor.offset_x + 1);
@@ -346,7 +389,10 @@ void editorAppendRows(char *s, size_t len){
 }
 
 void editorOpen(char* filename){
-  FILE *fp = fopen(filename, "r");
+  free(editor.filename);
+  editor.filename = strdup(filename);
+
+  FILE *fp = fopen(editor.filename, "r");
   if(!fp) die("failed to open file");
 
   char *line = NULL;

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <termios.h>
+#include <time.h>
 #include "keybinds.h"
 
 #define ABUF_INIT {NULL, 0}
@@ -14,6 +15,9 @@ typedef struct {
   int cursor_x, cursor_y, st_cx, render_x;
   int screen_rows, screen_cols;
   int numrows, offset_y, offset_x;
+  char* filename;
+  char statusmsg[64];
+  time_t statusmsg_time;
   erow *row;
   struct termios org_termios;
 } editorconf ;
@@ -49,3 +53,6 @@ void editorOpen(char* filename);
 int editorReadKey();
 void editorScroll();
 int editorCxtoRx(erow *row, int cursor_x);
+void editorDrawStatusBar(abuf *buf);
+void editorSetStatusMsg(const char *fmt, ...);
+void editorDrawStsMsgBar(abuf *ab);
