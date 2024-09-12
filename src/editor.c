@@ -225,10 +225,19 @@ void editorProcessKeyPress() {
       break;
 
     case HOME_KEY: editor.cursor_x = 0; break;
-    case END_KEY: editor.cursor_x = editor.screen_cols-1; break;
-
+    case END_KEY:
+      if(editor.cursor_y < editor.numrows) {
+        editor.cursor_x = editor.row[editor.cursor_y].size-1;
+        editor.st_cx = editor.cursor_x;
+      }
+      break;
     case PAGE_UP:
     case PAGE_DOWN: {
+        if(c == PAGE_UP) editor.cursor_y = editor.offset_y+settings.scrollpadding;
+        else {
+          editor.cursor_y = editor.offset_y+editor.screen_rows-1-settings.scrollpadding;
+          if(editor.cursor_y > editor.numrows) editor.cursor_y = editor.numrows;
+        }
         int _times = editor.screen_rows;
         while (_times--) editorMoveCursor(c == PAGE_UP? ARROW_UP: ARROW_DOWN);
       }
