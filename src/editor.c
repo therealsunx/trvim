@@ -115,7 +115,7 @@ void editorProcessKeyPress() {
   case END_KEY:
     if (editor.buf.cursor.y < editor.buf.row_size) {
       editor.buf.cursor.x = editor.buf.rows[editor.buf.cursor.y].size - 1;
-      editor.buf.st_cx = editor.buf.cursor.x;
+      editor.buf.st.cursx = editor.buf.cursor.x;
     }
     break;
 
@@ -257,7 +257,10 @@ char *editorPrompt(char *prompt, void(*callback)(char*, int)){
 void editorFindCallback(char *query, int key){
   if(key == RETURN || key == ESCAPE) return;
   if(query == NULL) return;
-  bufferFind(&editor.buf, query);
+  int dir = 0;
+  if(key == ARROW_UP) dir=-1;
+  else if(key == ARROW_DOWN) dir=1;
+  bufferFind(&editor.buf, query, dir);
 }
 
 void editorFind(){
@@ -265,8 +268,10 @@ void editorFind(){
   vec2 _st_off = editor.buf.offset;
 
   char *query = editorPrompt("Search: %s (Esc to cancel)", editorFindCallback);
-  if(query) free(query);
-  else{
+  if(query) {
+    if(editor.buf.st.query) free(editor.buf.st.query);
+    editor.buf.st.query = query;
+  } else{
     editor.buf.cursor = _st_cur;
     editor.buf.offset = _st_off;
   }

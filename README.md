@@ -4,7 +4,17 @@ I am attempting to make a text editor, that is similar in use as vim. Let's see 
 ## what is expected?
 A comprehensive text editor with syntax highlighting and few autocompletions for general text editing.
 
+## DONE
+- movement
+- editing
+- scroll
+- prompted incremental search
+- open & save file
+- buffer status bar
+- editor command & msg bar
+
 ## TODO
+- syntax highlighting
 - absolute and relative line number
 - status msg bar
     - input prompt
@@ -13,7 +23,6 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - command buffer
 - text editing
 - text wrap
-- bufferize the editor
 - vim operation modes
     - buffer modes
     - normal mode
@@ -22,3 +31,7 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - insert mode
         - editing
         - arrow based movements
+- bufferize the editor
+    - multiple buffers
+    - buffer navigation
+

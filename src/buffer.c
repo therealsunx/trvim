@@ -20,10 +20,10 @@ void initBuffer(buffer *buf) {
       .size = DEF_VEC2,
       .row_size = 0,
       .render_x = 0,
-      .st_cx = 0,
       .dirty = 0,
       .rows = NULL,
       .filename = NULL,
+      .st = DEF_STATE,
   };
 }
 
@@ -106,12 +106,12 @@ void bufferMoveCursor(buffer *buf, int key){
   case ARROW_LEFT:
     if (buf->cursor.x > 0)
       buf->cursor.x--;
-    buf->st_cx = buf->cursor.x;
+    buf->st.cursx = buf->cursor.x;
     break;
   case ARROW_RIGHT:
     if (row && buf->cursor.x < row->size - 1)
       buf->cursor.x++;
-    buf->st_cx = buf->cursor.x;
+    buf->st.cursx = buf->cursor.x;
     break;
   case ARROW_UP:
     if (buf->cursor.y > 0)
@@ -126,7 +126,7 @@ void bufferMoveCursor(buffer *buf, int key){
   // cursor state preservation
   if (buf->cursor.y < buf->row_size) {
     row = &buf->rows[buf->cursor.y];
-    buf->cursor.x = buf->st_cx;
+    buf->cursor.x = buf->st.cursx;
     if (buf->cursor.x >= row->size)
       buf->cursor.x = row->size == 0 ? 0 : row->size - 1;
   }
@@ -211,7 +211,7 @@ void bufferInsertChar(buffer* buf, int ch){
   }
   rowInsertCharacter(&buf->rows[buf->cursor.y], buf->cursor.x, ch);
   buf->cursor.x++;
-  buf->st_cx = buf->cursor.x;
+  buf->st.cursx = buf->cursor.x;
   buf->dirty++;
 }
 
@@ -227,7 +227,7 @@ void bufferInsertNewLine(buffer *buf){
   }
   buf->cursor.y ++;
   buf->cursor.x = 0;
-  buf->st_cx = 0;
+  buf->st.cursx = 0;
   buf->dirty++;
 }
 
@@ -246,7 +246,7 @@ void bufferDelChar(buffer *buf, int dir){
     bufferDeleteRow(buf, buf->cursor.y);
     buf->cursor.y--;
   }
-  buf->st_cx = buf->cursor.x;
+  buf->st.cursx = buf->cursor.x;
   buf->dirty++;
 }
 
@@ -290,14 +290,27 @@ int bufferSave(buffer *buf){
   return -1;
 }
 
-void bufferFind(buffer *buf, char *query){
-  for(int i=0; i<buf->row_size; i++){
-    erow *row = &buf->rows[i];
+void bufferFind(buffer *buf, char *query, int dir){
+
+  int _d = dir==0?1:dir;
+  for(int i=0, crs=buf->cursor.y; i<=buf->row_size; i++, crs+=_d){
+
+    if(crs == -1) crs+=buf->row_size;
+    else if(crs == buf->row_size) crs = 0;
+
+    erow *row = &buf->rows[crs];
     char *match = strstr(row->renderchars, query);
     if(match){
-      buf->cursor.y = i;
-      buf->cursor.x = rowRendertoCursorX(row, match - row->renderchars);
-      //buf->offset.y = buf->row_size-1;
+      int _cx = rowRendertoCursorX(row, match - row->renderchars);
+      if(i==0){
+        if(dir==1 && _cx<=buf->cursor.x) continue;
+        else if(dir==0 && _cx<buf->cursor.x) continue;
+        else if(dir==-1 && _cx>=buf->cursor.x) continue;
+      }
+
+      buf->cursor.y = crs;
+      buf->cursor.x = _cx;
+      break;
     }
   }
 }

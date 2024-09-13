@@ -4,9 +4,17 @@
 #include "abuf.h"
 #include "row.h"
 
+#define DEF_STATE (state_t) {0, NULL}
+
+typedef struct {
+  int cursx;
+  char* query;
+} state_t;
+
 typedef struct {
   vec2 cursor, size, offset;
-  int row_size, dirty, st_cx, render_x;
+  int row_size, dirty, render_x;
+  state_t st;
   erow *rows;
   char *filename;
 } buffer;
@@ -26,5 +34,4 @@ void bufferInsertNewLine(buffer *buf);
 void bufferDelChar(buffer *buf, int dir);
 int bufferSave(buffer *buf);
 char *bufferRowtoStr(buffer *buf, int *buflen);
-void bufferFind(buffer *buf, char *query);
-
+void bufferFind(buffer *buf, char *query, int dir);
