@@ -5,7 +5,7 @@ int main(int argc, char* argv[]) {
   initEditor();
   if(argc >= 2) editorOpen(argv[1]);
 
-  editorSetStatusMsg("Help: Ctrl+z to quit");
+  editorSetStatusMsg("Help: Ctrl-Z=quit | CTRL-S=Save");
   while (1) {
     editorRefreshScreen();
     editorProcessKeyPress();

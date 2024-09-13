@@ -4,4 +4,5 @@ typedef struct {
 } erow;
 
 void rowUpdate(erow *row);
+void rowInsertCharacter(erow *row, int index, int ch);
 int rowCursorToRenderX(erow *row, int cursor_x);

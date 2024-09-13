@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "row.h"
 #include "settings.h"
@@ -39,3 +40,11 @@ int rowCursorToRenderX(erow *row, int cursor_x){
   return rx;
 }
 
+void rowInsertCharacter(erow *row, int index, int ch){
+  if(index < 0 || index > row->size) index = row->size;
+  row->chars = realloc(row->chars, row->size+2);
+  memmove(&row->chars[index+1], &row->chars[index], row->size-index+1);
+  row->size++;
+  row->chars[index] = ch;
+  rowUpdate(row);
+}

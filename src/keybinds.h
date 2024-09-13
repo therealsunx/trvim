@@ -2,7 +2,16 @@
 
 enum editorKeys {
 
+  CTRL_C = CTRL_KEY('c'),
+  ESCAPE = '\x1b',
+
+  CTRL_S = CTRL_KEY('a'),
+
+  RETURN = '\r',
   CTRl_Z = CTRL_KEY('z'),
+
+  BACKSPACE = 127,
+  CTRL_H = CTRL_KEY('h'),
 
   ARROW_LEFT=1000,
   ARROW_RIGHT,

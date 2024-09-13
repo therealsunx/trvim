@@ -36,3 +36,8 @@ void editorMoveCursor(int charKey);
 void editorScroll();
 void editorAppendRows(char *s, size_t len);
 void editorOpen(char* filename);
+
+// -- editor operations --
+void editorInsertChar(int ch);
+void editorSaveBuffer();
+char *editorRowtoStr(int *buflen);

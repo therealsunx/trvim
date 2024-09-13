@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "editor.h"
 #include "settings.h"
@@ -161,12 +163,14 @@ void editorProcessKeyPress() {
       break;
 
     case HOME_KEY: editor.cursor_x = 0; break;
+
     case END_KEY:
       if(editor.cursor_y < editor.numrows) {
         editor.cursor_x = editor.row[editor.cursor_y].size-1;
         editor.st_cx = editor.cursor_x;
       }
       break;
+
     case PAGE_UP:
     case PAGE_DOWN: {
         if(c == PAGE_UP) editor.cursor_y = editor.offset_y+settings.scrollpadding;
@@ -178,11 +182,34 @@ void editorProcessKeyPress() {
         while (_times--) editorMoveCursor(c == PAGE_UP? ARROW_UP: ARROW_DOWN);
       }
       break;
+
     case ARROW_LEFT:
     case ARROW_RIGHT:
     case ARROW_UP:
     case ARROW_DOWN:
       editorMoveCursor(c);
+      break;
+
+    case CTRL_S:
+      editorSaveBuffer();
+      break;
+    
+    case RETURN:
+      // TODO
+      break;
+    case BACKSPACE:
+    case CTRL_H:
+      // TODO
+    case DEL_KEY:
+      // TODO
+      break;
+
+    case CTRL_C:
+    case ESCAPE:
+      // normal mode switch
+      break;
+    default:
+      editorInsertChar(c);
       break;
   }
 }
@@ -264,4 +291,51 @@ void editorOpen(char* filename){
   }
   free(line);
   fclose(fp);
+}
+
+// -- editor operations --
+
+void editorInsertChar(int ch){
+  if(editor.cursor_y == editor.numrows){
+    editorAppendRows("", 0);
+  }
+  rowInsertCharacter(&editor.row[editor.cursor_y], editor.cursor_x, ch);
+  editor.cursor_x++;
+}
+
+void editorSaveBuffer(){
+  if(editor.filename == NULL) return;
+
+  int len;
+  char *buf = editorRowtoStr(&len);
+
+  int fd = open(editor.filename, O_RDWR | O_CREAT, 0644); // 0644 is set of permissions for file, added while creating it
+  if(fd != -1){
+    if(ftruncate(fd, len) != -1){ // set file size to specified length
+      write(fd, buf, len);
+      free(buf);
+      close(fd);
+      editorSetStatusMsg("%d bytes written to disk", len);
+      return;
+    }
+    close(fd);
+  }
+  free(buf);
+  editorSetStatusMsg("Failed to write file: %s", strerror(errno));
+}
+
+char *editorRowtoStr(int *buflen){
+  int tlen = 0;
+  for(int j=0; j<editor.numrows; j++){
+    tlen += editor.row[j].size+1;
+  }
+
+  *buflen = tlen;
+  char *buf = malloc(tlen);
+  for(int j=0, ind=0; j<editor.numrows; j++){
+    memcpy(&buf[ind], editor.row[j].chars, editor.row[j].size);
+    ind += editor.row[j].size;
+    buf[ind++] = '\n';
+  }
+  return buf;
 }
