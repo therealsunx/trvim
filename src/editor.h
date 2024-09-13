@@ -3,34 +3,28 @@
 #include <time.h>
 
 #include "keybinds.h"
-#include "row.h"
 #include "abuf.h"
-
-#define EDITOR_VERSION "0.0.1"
+#include "buffer.h"
 
 typedef struct {
-  int cursor_x, cursor_y, st_cx, render_x;
-  int screen_rows, screen_cols;
-  int numrows, offset_y, offset_x;
-  char* filename;
+  buffer buf;
+  vec2 screen_size;
+  struct termios org_termios;
   char statusmsg[64];
   time_t statusmsg_time;
-  int dirty;
-  erow *row;
-  struct termios org_termios;
-} editorconf ;
+} editorconf;
 
 // --editor init functions --
 void disableRawMode();
 void enableRawMode();
 void initEditor();
-void addWelcomeMsg(abuf *ab);
 
 // -- editor prcs --
-void editorDrawRows(abuf *appendbuffer);
-void editorDrawStatusBar(abuf *buf);
+void editorDrawBuffers(abuf *appendbuffer);
+void editorShowCursor(abuf *ab);
 void editorDrawStsMsgBar(abuf *ab);
 void editorSetStatusMsg(const char *fmt, ...);
+
 void editorRefreshScreen();
 void editorProcessKeyPress();
 void editorMoveCursor(int charKey);
@@ -44,5 +38,6 @@ void editorInsertChar(int ch);
 void editorInsertNewLine();
 void editorDelChar(int dir);
 void editorSaveBuffer();
-char *editorRowtoStr(int *buflen);
-char *editorPrompt(char *prompt);
+char *editorPrompt(char *query, void (*callback)(char*, int));
+
+void editorFind();

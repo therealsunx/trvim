@@ -40,6 +40,17 @@ int rowCursorToRenderX(erow *row, int cursor_x){
   return rx;
 }
 
+int rowRendertoCursorX(erow *row, int render_x){
+  int rx = 0;
+  for(int j=0; j<render_x; j++){
+    if(row->chars[j] == '\t')
+      rx += (settings.tabwidth-1) - (rx % settings.tabwidth);
+    rx++;
+    if(rx > render_x) return j;
+  }
+  return rx;
+}
+
 void rowInsertCharacter(erow *row, int index, int ch){
   if(index < 0 || index > row->size) index = row->size;
   row->chars = realloc(row->chars, row->size+2);

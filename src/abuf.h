@@ -1,3 +1,5 @@
+#pragma once
+
 #define ABUF_INIT {NULL, 0}
 
 typedef struct {

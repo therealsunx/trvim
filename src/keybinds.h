@@ -1,3 +1,5 @@
+#pragma once
+
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 enum editorKeys {
@@ -5,7 +7,8 @@ enum editorKeys {
   CTRL_C = CTRL_KEY('c'),
   ESCAPE = '\x1b',
 
-  CTRL_S = CTRL_KEY('a'),
+  CTRL_A = CTRL_KEY('a'),
+  CTRL_F = CTRL_KEY('f'),
 
   RETURN = '\r',
   CTRl_Z = CTRL_KEY('z'),

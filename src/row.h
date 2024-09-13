@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 
 typedef struct {
@@ -9,5 +11,6 @@ void rowUpdate(erow *row);
 void rowInsertCharacter(erow *row, int index, int ch);
 void rowDeleteCharacter(erow *row, int index);
 int rowCursorToRenderX(erow *row, int cursor_x);
+int rowRendertoCursorX(erow *row, int render_x);
 void rowFree(erow *row);
 void rowAppendString(erow *row, char *s, size_t len);
