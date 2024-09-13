@@ -13,20 +13,20 @@ void rowUpdate(erow *row){
     if(row->chars[j] == '\t') tabs++;
   }
 
-  free(row->renderch);
-  row->renderch = malloc(row->size+(settings.tabwidth-1)*tabs+1);
+  free(row->renderchars);
+  row->renderchars = malloc(row->size+(settings.tabwidth-1)*tabs+1);
 
   int idx = 0;
   for(int j=0; j<row->size; j++){
     if(row->chars[j] == '\t'){
-      row->renderch[idx++] = ' ';
-      while(idx % settings.tabwidth != 0) row->renderch[idx++] = ' ';
+      row->renderchars[idx++] = ' ';
+      while(idx % settings.tabwidth != 0) row->renderchars[idx++] = ' ';
     }else{
-      row->renderch[idx++] = row->chars[j];
+      row->renderchars[idx++] = row->chars[j];
     }
   }
 
-  row->renderch[idx] = '\0';
+  row->renderchars[idx] = '\0';
   row->rsize = idx;
 }
 
@@ -46,5 +46,25 @@ void rowInsertCharacter(erow *row, int index, int ch){
   memmove(&row->chars[index+1], &row->chars[index], row->size-index+1);
   row->size++;
   row->chars[index] = ch;
+  rowUpdate(row);
+}
+
+void rowDeleteCharacter(erow *row, int index){
+  if(index < 0 || index >= row->size) return;
+  memmove(&row->chars[index], &row->chars[index+1], row->size-index);
+  row->size--;
+  rowUpdate(row);
+}
+
+void rowFree(erow *row){
+  free(row->chars);
+  free(row->renderchars);
+}
+
+void rowAppendString(erow *row, char *s, size_t len){
+  row->chars = realloc(row->chars, row->size + len + 1);
+  memcpy(&row->chars[row->size], s, len);
+  row->size += len;
+  row->chars[row->size] = '\0';
   rowUpdate(row);
 }

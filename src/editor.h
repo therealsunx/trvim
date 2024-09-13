@@ -15,6 +15,7 @@ typedef struct {
   char* filename;
   char statusmsg[64];
   time_t statusmsg_time;
+  int dirty;
   erow *row;
   struct termios org_termios;
 } editorconf ;
@@ -34,10 +35,14 @@ void editorRefreshScreen();
 void editorProcessKeyPress();
 void editorMoveCursor(int charKey);
 void editorScroll();
-void editorAppendRows(char *s, size_t len);
+void editorInsertRow(int index, char *s, size_t len);
+void editorDeleteRow(int index);
 void editorOpen(char* filename);
 
 // -- editor operations --
 void editorInsertChar(int ch);
+void editorInsertNewLine();
+void editorDelChar(int dir);
 void editorSaveBuffer();
 char *editorRowtoStr(int *buflen);
+char *editorPrompt(char *prompt);
