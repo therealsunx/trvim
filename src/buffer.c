@@ -24,6 +24,7 @@ void initBuffer(buffer *buf) {
       .rows = NULL,
       .filename = NULL,
       .st = DEF_STATE,
+      .syntax = NULL,
   };
 }
 
@@ -53,21 +54,36 @@ void bufferDrawRows(buffer *buf, abuf *ab){
         addWelcomeMsg(buf, ab);
       else
         abAppend(ab, "~", 1);
-    } else {
-      int len = buf->rows[_fr].rsize - buf->offset.x;
-      if (len < 0)
-        len = 0;
-      if (len > buf->size.x)
-        len = buf->size.x;
+    } else if(1){
+      // render according to metadata
+      int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
+
+      char *ch = &buf->rows[_fr].renderchars[buf->offset.x];
+      unsigned char *hl = &buf->rows[_fr].hlchars[buf->offset.x];
+      int _ptk = TK_IGNORE;
+
+      for(int i=0; i<len; i++){
+        int _clr = hlTokentoColorIndex(hl[i]);
+        if(hl[i] != TK_IGNORE && hl[i] != _ptk){
+          char _tcstr[16];
+          if(_ptk == TK_MATCH) abAppend(ab, "\x1b[49m", 5);
+          int _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[%dm", _clr);
+          abAppend(ab, _tcstr, _cl);
+          _ptk = hl[i];
+        }
+        abAppend(ab, &ch[i], 1);
+      }
+    }else {
+      int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
       abAppend(ab, &buf->rows[_fr].renderchars[buf->offset.x], len);
     }
-    abAppend(ab, "\x1b[K", 3); // clear the line before drawing
+    abAppend(ab, "\x1b[m\x1b[K", 6); // clear the line before drawing
     abAppend(ab, "\r\n", 2);
   }
 }
 
 void bufferDrawStatusBar(buffer *buf, abuf *ab){
-  abAppend(ab, "\x1b[7m", 4);
+  abAppend(ab, "\x1b[100m", 6);
 
   char lstatus[80], rstatus[80];
   int len = snprintf(lstatus, sizeof(lstatus), "%.20s %.3s",
@@ -157,6 +173,11 @@ void bufferScroll(buffer *buf){
     buf->offset.x = buf->render_x;
 }
 
+void bufferUpdateRow(buffer *buf, erow *row){
+  rowUpdate(row);
+  rowUpdateSyntax(row, buf->syntax);
+}
+
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len){
   if(index < 0 || index > buf->row_size) return;
 
@@ -170,7 +191,8 @@ void bufferInsertRow(buffer *buf, int index, char *s, size_t len){
   _rw->chars[len] = '\0';
   _rw->rsize = 0;
   _rw->renderchars = NULL;
-  rowUpdate(_rw);
+  _rw->hlchars = NULL;
+  bufferUpdateRow(buf, _rw);
   buf->row_size++;
   buf->dirty++;
 }
@@ -223,7 +245,7 @@ void bufferInsertNewLine(buffer *buf){
     row = &buf->rows[buf->cursor.y];
     row->size = buf->cursor.x;
     row->chars[row->size] = '\0';
-    rowUpdate(row);
+    bufferUpdateRow(buf, row);
   }
   buf->cursor.y ++;
   buf->cursor.x = 0;
@@ -290,7 +312,7 @@ int bufferSave(buffer *buf){
   return -1;
 }
 
-void bufferFind(buffer *buf, char *query, int dir){
+int bufferFind(buffer *buf, char *query, int dir){
 
   int _d = dir==0?1:dir;
   for(int i=0, crs=buf->cursor.y; i<=buf->row_size; i++, crs+=_d){
@@ -310,7 +332,8 @@ void bufferFind(buffer *buf, char *query, int dir){
 
       buf->cursor.y = crs;
       buf->cursor.x = _cx;
-      break;
+      return 0;
     }
   }
+  return -1;
 }

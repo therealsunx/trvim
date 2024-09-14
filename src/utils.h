@@ -14,3 +14,8 @@ int getCursorPosition(int *x, int *y);
 void clearTerminal();
 void die(const char *s);
 
+int clamp(int value, int min, int max);
+
+int isSeparator(char c);
+int isPunct(char c);
+int isNumber(char *ch);

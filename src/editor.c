@@ -255,12 +255,33 @@ char *editorPrompt(char *prompt, void(*callback)(char*, int)){
 }
 
 void editorFindCallback(char *query, int key){
+  static int _st_hlind;
+  static unsigned char *_st_hl = NULL;
+
+  buffer *_cbuf = &editor.buf;
+
+  if(_st_hl){
+    memcpy(_cbuf->rows[_st_hlind].hlchars, _st_hl, _cbuf->rows[_st_hlind].rsize);
+    free(_st_hl);
+    _st_hl=NULL;
+  }
+
   if(key == RETURN || key == ESCAPE) return;
   if(query == NULL) return;
   int dir = 0;
   if(key == ARROW_UP) dir=-1;
   else if(key == ARROW_DOWN) dir=1;
-  bufferFind(&editor.buf, query, dir);
+
+  if(bufferFind(_cbuf, query, dir)==0){
+    // save state for reverting later
+    _st_hlind = _cbuf->cursor.y;
+    erow *row = &_cbuf->rows[_st_hlind];
+    _st_hl = malloc(row->rsize);
+    memcpy(_st_hl, row->hlchars, row->rsize);
+
+    // highlight found query result
+    memset(&row->hlchars[rowCursorToRenderX(row, _cbuf->cursor.x)], TK_MATCH, strlen(query));
+  }
 }
 
 void editorFind(){

@@ -3,6 +3,8 @@
 
 #include "row.h"
 #include "settings.h"
+#include "highlight.h"
+#include "utils.h"
 
 extern settingsType settings;
 
@@ -28,6 +30,49 @@ void rowUpdate(erow *row){
 
   row->renderchars[idx] = '\0';
   row->rsize = idx;
+}
+
+void setType(unsigned char* hlch, char *str, int len) {
+  char _sstr[len+1];
+  memcpy(_sstr, str, len);
+  _sstr[len] = '\0';
+
+  // get the token type from string
+  unsigned char _tk = TK_NORMAL;
+  if(isPunct(_sstr[0])) _tk = TK_PUNCTUATION;
+  else if(isNumber(_sstr)) _tk = TK_NUMBER;
+
+  memset(hlch, _tk, len);
+}
+
+void rowUpdateSyntax(erow *row, syntaxhl *syntax){
+  if(!syntax) {}// TODO: actually use patterns in syntax
+
+  char *cmnt = "//";
+  char _cmlen = strlen(cmnt);
+
+  free(row->hlchars);
+  row->hlchars = malloc(row->rsize);
+  memset(row->hlchars, TK_IGNORE, row->rsize);
+
+  for (int i = 0, ci = 0; i < row->rsize; i++) {
+
+    char c = row->renderchars[i];
+    if(isSeparator(c)){
+      if(ci != i){
+        setType(&row->hlchars[ci], &row->renderchars[ci], i-ci);
+      }
+
+      if(strncmp(cmnt, &row->renderchars[i], _cmlen)==0){
+        //setType(&row->hlchars[i], &row->renderchars[i], row->size-i);
+        memset(&row->hlchars[i], TK_COMMENT, row->size-i);
+        break;
+      } else if(c != ' '){
+        setType(&row->hlchars[i], &row->renderchars[i], 1);
+      }
+      ci = i+1;
+    }
+  }
 }
 
 int rowCursorToRenderX(erow *row, int cursor_x){
@@ -70,6 +115,7 @@ void rowDeleteCharacter(erow *row, int index){
 void rowFree(erow *row){
   free(row->chars);
   free(row->renderchars);
+  free(row->hlchars);
 }
 
 void rowAppendString(erow *row, char *s, size_t len){

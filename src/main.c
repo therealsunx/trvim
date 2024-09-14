@@ -1,6 +1,8 @@
 #include "editor.h"
 
-int main(int argc, char* argv[]) {
+// test comment
+    // test comment
+int main(int argc, char* argv[]) { // test comment
   enableRawMode();
   initEditor();
   if(argc >= 2) editorOpen(argv[1]);

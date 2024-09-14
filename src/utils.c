@@ -1,5 +1,7 @@
+#include <ctype.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -51,3 +53,24 @@ void die(const char *s) { // because func name:kill was already used
   exit(1);
 }
 
+int clamp(int value, int min, int max){
+  if(value<min) return min;
+  if(value>max) return max;
+  return value;
+}
+
+int isSeparator(char c){
+  return c == ' ' || isPunct(c) || c == '\n' || c == '\0';
+}
+
+int isPunct(char c){
+  return strchr("!$%&*+-./:<>=?@^|~#(){}[],;\"\\'", c) != NULL;
+}
+
+int isNumber(char *ch){
+  int s = strlen(ch);
+  for(int i=0; i<s; i++){
+    if(!isdigit(ch[i])) return 0;
+  }
+  return 1;
+}

@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "abuf.h"
 #include "row.h"
+#include "highlight.h"
 
 #define DEF_STATE (state_t) {0, NULL}
 
@@ -17,6 +18,7 @@ typedef struct {
   state_t st;
   erow *rows;
   char *filename;
+  syntaxhl *syntax;
 } buffer;
 
 void initBuffer(buffer *buf);
@@ -26,6 +28,7 @@ void bufferDrawStatusBar(buffer *buf, abuf *ab);
 void bufferShowCursor(buffer *buf, abuf *ab);
 void bufferMoveCursor(buffer *buf, int key);
 void bufferScroll(buffer *buf);
+void bufferUpdateRow(buffer *buf, erow *row);
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len);
 void bufferDeleteRow(buffer *buf, int index);
 void bufferOpenFile(buffer *buf, char *filename);
@@ -34,4 +37,4 @@ void bufferInsertNewLine(buffer *buf);
 void bufferDelChar(buffer *buf, int dir);
 int bufferSave(buffer *buf);
 char *bufferRowtoStr(buffer *buf, int *buflen);
-void bufferFind(buffer *buf, char *query, int dir);
+int bufferFind(buffer *buf, char *query, int dir);

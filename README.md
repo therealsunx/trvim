@@ -12,16 +12,14 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
 - open & save file
 - buffer status bar
 - editor command & msg bar
+- normal editing
 
 ## TODO
 - syntax highlighting
 - absolute and relative line number
 - status msg bar
-    - input prompt
-    - message display
     - mode indicator
     - command buffer
-- text editing
 - text wrap
 - vim operation modes
     - buffer modes
@@ -30,6 +28,8 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - absolute and relative jumps
     - insert mode
         - editing
+        - cursor range increase
+        - thin cursor
         - arrow based movements
 - bufferize the editor
     - multiple buffers
