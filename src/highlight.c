@@ -6,7 +6,12 @@ char *C_KEYWORDS[] = {
   "switch", "if", "while", "for", "break", "continue", "return", "else",
   "struct", "union", "typedef", "static", "enum", "class", "case",
   "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
-  "void|", NULL
+  "void|", 
+  NULL
+};
+char *C_PREPROC[] = {
+  "include", "define", "undef", "ifdef", "if", "else", "elif", "endif",
+  "error", "pragma", NULL
 };
 
 syntaxhl HLDB[] ={
@@ -14,9 +19,10 @@ syntaxhl HLDB[] ={
     "c",
     C_FMATCH,
     C_KEYWORDS,
+    C_PREPROC,
+    '#',
     "//",
-    //"/*", "*/",
-    HL_NUMBERS|HL_KEYWORD|HL_PUNCTUATION|HL_STRING|HL_COMMENT
+    HL_NUMBERS|HL_KEYWORD|HL_PUNCTUATION|HL_STRING|HL_COMMENT|HL_PREPROC
   },
 };
 
@@ -29,11 +35,15 @@ int hlTokentoColorIndex(unsigned char hl) {
     case TK_COMMENT:
       return 37;
     case TK_KEYWORD1:
-      return 93;
-    case TK_KEYWORD2:
       return 91;
+    case TK_KEYWORD2:
+      return 93;
     case TK_KEYWORD3:
       return 92;
+    case TK_KEYWORD4:
+      return 94;
+    case TK_PREPROC:
+      return 36;
     case TK_PUNCTUATION:
       return 33;
     case TK_STRING:

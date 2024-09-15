@@ -32,7 +32,7 @@ void rowUpdate(erow *row){
   row->rsize = idx;
 }
 
-void setType(unsigned char* hlch, char *str, int len, syntaxhl *syn) {
+int setType(unsigned char* hlch, char *str, int len, syntaxhl *syn) {
   char _sstr[len+1];
   memcpy(_sstr, str, len);
   _sstr[len] = '\0';
@@ -44,9 +44,21 @@ void setType(unsigned char* hlch, char *str, int len, syntaxhl *syn) {
   else if(syn->flags & HL_NUMBERS
       && isNumber(_sstr)) _tk = TK_NUMBER;
   else if(syn->flags & HL_KEYWORD){
+    for(int j=0; syn->keywords[j]; j++){
+      int _klen = strlen(syn->keywords[j]);
+      int _k2 = syn->keywords[j][_klen-1] == '|';
+      if(_k2) _klen--;
+
+      if(len==_klen && !strncmp(_sstr, syn->keywords[j], _klen)){
+        _tk = _k2?TK_KEYWORD2:TK_KEYWORD1;
+        break;
+      }
+    }
+    if(_tk == TK_NORMAL) return 0;
   }
 
   memset(hlch, _tk, len);
+  return 1;
 }
 
 void rowUpdateSyntax(erow *row, syntaxhl *syntax){
@@ -73,21 +85,38 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
           continue;
         }
       } else if(ci != i){
-        setType(&row->hlchars[ci], &row->renderchars[ci], i-ci, syntax);
+        if(ci>0 && row->renderchars[ci-1] == syntax->preprocbeg){
+          int __hl = 0, _len = i-ci;
+          for(int j=0; syntax->preprocs[j]; j++){
+            int _klen  = strlen(syntax->preprocs[j]);
+            if(_klen == _len &&  !strncmp(&row->renderchars[ci], syntax->preprocs[j], _klen)){
+              memset(&row->hlchars[ci-1], TK_PREPROC, row->size-ci+1);
+              __hl++;
+              break;
+            }
+          }
+          if(!__hl) memset(&row->hlchars[ci], TK_NORMAL, i-ci);
+          else break;
+        } else if(!setType(&row->hlchars[ci], &row->renderchars[ci], i-ci, syntax)
+            && (syntax->flags & HL_KEYWORD)){
+          if(c=='(')
+            memset(&row->hlchars[ci], TK_KEYWORD3, i-ci);
+          else if(ci>0 && row->renderchars[ci-1]=='.')
+            memset(&row->hlchars[ci], TK_KEYWORD4, i-ci);
+          else 
+            memset(&row->hlchars[ci], TK_NORMAL, i-ci);
+        };
       }
 
-      if((syntax->flags & HL_STRING)
+      if(syntax->flags & HL_COMMENT
+          && !strncmp(syntax->cmnt_1ls, &row->renderchars[i], strlen(syntax->cmnt_1ls))){
+        memset(&row->hlchars[i], TK_COMMENT, row->size-i);
+        break;
+      } else if((syntax->flags & HL_STRING)
           && (c == '"' || c == '\'' )){
         in_str++;
         ci = i;
         continue;;
-      } else if(syntax->flags & HL_COMMENT
-          && !strncmp(syntax->cmnt_1ls, &row->renderchars[i], strlen(syntax->cmnt_1ls))){
-        memset(&row->hlchars[i], TK_COMMENT, row->size-i);
-        break;
-      //} else if(syntax->flags & HL_COMMENT
-          //&& !strncmp(syntax->cmnt_blks, &row->renderchars[i], strlen(syntax->cmnt_blks))){
-        // block comment processing
       } else if(c != ' '){
         setType(&row->hlchars[i], &row->renderchars[i], 1, syntax);
       }

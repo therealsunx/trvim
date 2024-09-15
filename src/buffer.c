@@ -176,7 +176,7 @@ void bufferScroll(buffer *buf){
 
 void bufferUpdateRow(buffer *buf, erow *row){
   rowUpdate(row);
-  rowUpdateSyntax(row, buf->syntax);
+  if(buf->syntax) rowUpdateSyntax(row, buf->syntax);
 }
 
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len){
@@ -235,6 +235,7 @@ void bufferInsertChar(buffer* buf, int ch){
     bufferInsertRow(buf, buf->row_size, "", 0);
   }
   rowInsertCharacter(&buf->rows[buf->cursor.y], buf->cursor.x, ch);
+  bufferUpdateRow(buf, &buf->rows[buf->cursor.y]);
   buf->cursor.x++;
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
@@ -271,6 +272,7 @@ void bufferDelChar(buffer *buf, int dir){
     bufferDeleteRow(buf, buf->cursor.y);
     buf->cursor.y--;
   }
+  bufferUpdateRow(buf, row);
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
 }
