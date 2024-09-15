@@ -12,6 +12,8 @@
 #include "settings.h"
 
 extern settingsType settings;
+extern syntaxhl HLDB[];
+extern int HLDB_SIZE;
 
 void initBuffer(buffer *buf) {
   *buf = (buffer){
@@ -54,7 +56,7 @@ void bufferDrawRows(buffer *buf, abuf *ab){
         addWelcomeMsg(buf, ab);
       else
         abAppend(ab, "~", 1);
-    } else if(1){
+    } else if(buf->syntax){
       // render according to metadata
       int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
 
@@ -86,15 +88,14 @@ void bufferDrawStatusBar(buffer *buf, abuf *ab){
   abAppend(ab, "\x1b[100m", 6);
 
   char lstatus[80], rstatus[80];
-  int len = snprintf(lstatus, sizeof(lstatus), "%.20s %.3s",
-                     buf->filename ? buf->filename : "[No name]",
+  int len = snprintf(lstatus, sizeof(lstatus), "%.20s [%s] %.3s",
+                     buf->filename ? buf->filename : "[No name]", buf->syntax?buf->syntax->filetype:"nt",
                      buf->dirty ? "[+]" : "");
   if (len > buf->size.x)
     len = buf->size.x;
 
-  int lsz = buf->cursor.y<buf->row_size? buf->rows[buf->cursor.y].size:0;
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%d, %d|%d", buf->cursor.y,
-                      buf->cursor.x, lsz);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", buf->cursor.y, buf->row_size,
+                      buf->cursor.x);
 
   abAppend(ab, lstatus, len);
   for (; len < buf->size.x - rlen; len++)
@@ -212,6 +213,8 @@ void bufferOpenFile(buffer *buf, char *filename){
   FILE *fp = fopen(buf->filename, "r");
   if (!fp)
     die("failed to open file");
+
+  bufferSelectSyntax(buf);
 
   char *line = NULL;
   size_t lcap = 0;
@@ -336,4 +339,29 @@ int bufferFind(buffer *buf, char *query, int dir){
     }
   }
   return -1;
+}
+
+void bufferSelectSyntax(buffer *buf){
+  buf->syntax = NULL;
+  if(buf->filename == NULL) return; 
+
+  char *_extn = strchr(buf->filename, '.');
+  for(int j=0; j< HLDB_SIZE ; j++){
+    syntaxhl *s = &HLDB[j];
+    int i=0;
+    char *_mtch;
+    while((_mtch = s->filematch[i])!=NULL){
+      int isext = _mtch[0]=='.';
+      if((isext && _extn && !strcmp(_extn, _mtch)) ||
+          (!isext && strstr(buf->filename, _mtch))){
+        buf->syntax = s;
+
+        for(int fr=0; fr<buf->row_size; fr++){
+          rowUpdateSyntax(&buf->rows[fr], buf->syntax);
+        }
+        return;
+      }
+      i++;
+    }
+  }
 }

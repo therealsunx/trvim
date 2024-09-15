@@ -32,43 +32,64 @@ void rowUpdate(erow *row){
   row->rsize = idx;
 }
 
-void setType(unsigned char* hlch, char *str, int len) {
+void setType(unsigned char* hlch, char *str, int len, syntaxhl *syn) {
   char _sstr[len+1];
   memcpy(_sstr, str, len);
   _sstr[len] = '\0';
 
   // get the token type from string
   unsigned char _tk = TK_NORMAL;
-  if(isPunct(_sstr[0])) _tk = TK_PUNCTUATION;
-  else if(isNumber(_sstr)) _tk = TK_NUMBER;
+  if(syn->flags & HL_PUNCTUATION
+      && isPunct(_sstr[0])) _tk = TK_PUNCTUATION;
+  else if(syn->flags & HL_NUMBERS
+      && isNumber(_sstr)) _tk = TK_NUMBER;
+  else if(syn->flags & HL_KEYWORD){
+  }
 
   memset(hlch, _tk, len);
 }
 
 void rowUpdateSyntax(erow *row, syntaxhl *syntax){
-  if(!syntax) {}// TODO: actually use patterns in syntax
+  if(!syntax) return; // TODO: actually use patterns in syntax
 
-  char *cmnt = "//";
-  char _cmlen = strlen(cmnt);
 
   free(row->hlchars);
   row->hlchars = malloc(row->rsize);
   memset(row->hlchars, TK_IGNORE, row->rsize);
 
+  int in_str = 0;
   for (int i = 0, ci = 0; i < row->rsize; i++) {
 
     char c = row->renderchars[i];
     if(isSeparator(c)){
-      if(ci != i){
-        setType(&row->hlchars[ci], &row->renderchars[ci], i-ci);
+      if(in_str){
+        if(c == '"' || c == '\'' || i==row->size-1){
+          in_str = 0;
+          memset(&row->hlchars[ci], TK_STRING, i-ci);
+          ci = i+1;
+          continue;
+        } else {
+          // escape chars check
+          continue;
+        }
+      } else if(ci != i){
+        setType(&row->hlchars[ci], &row->renderchars[ci], i-ci, syntax);
       }
 
-      if(strncmp(cmnt, &row->renderchars[i], _cmlen)==0){
-        //setType(&row->hlchars[i], &row->renderchars[i], row->size-i);
+      if((syntax->flags & HL_STRING)
+          && (c == '"' || c == '\'' )){
+        in_str++;
+        ci = i;
+        continue;;
+      } else if(syntax->flags & HL_COMMENT
+          && !strncmp(syntax->cmnt_1ls, &row->renderchars[i], strlen(syntax->cmnt_1ls))){
         memset(&row->hlchars[i], TK_COMMENT, row->size-i);
         break;
+      //} else if(syntax->flags & HL_COMMENT
+          //&& !strncmp(syntax->cmnt_blks, &row->renderchars[i], strlen(syntax->cmnt_blks))){
+        // block comment processing
       } else if(c != ' '){
-        setType(&row->hlchars[i], &row->renderchars[i], 1);
+        setType(&row->hlchars[i], &row->renderchars[i], 1, syntax);
       }
       ci = i+1;
     }

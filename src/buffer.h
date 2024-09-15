@@ -38,3 +38,4 @@ void bufferDelChar(buffer *buf, int dir);
 int bufferSave(buffer *buf);
 char *bufferRowtoStr(buffer *buf, int *buflen);
 int bufferFind(buffer *buf, char *query, int dir);
+void bufferSelectSyntax(buffer *buf);

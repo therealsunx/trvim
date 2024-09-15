@@ -10,7 +10,9 @@ enum hlTokens {
   TK_IGNORE = 0,
   TK_NORMAL,
   TK_NUMBER,
-  TK_KEYWORD,
+  TK_KEYWORD1,
+  TK_KEYWORD2,
+  TK_KEYWORD3,
   TK_COMMENT,
   TK_STRING,
   TK_PUNCTUATION,
@@ -19,7 +21,10 @@ enum hlTokens {
 
 typedef struct {
   char *filetype;
-  char **extensions;
+  char **filematch;
+  char **keywords;
+  char *cmnt_1ls;
+  //char *cmnt_blks; char *cmnt_blke;
   int flags;
 } syntaxhl;
 
