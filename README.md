@@ -13,6 +13,16 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
 - buffer status bar
 - editor command & msg bar
 - normal editing
+- syntax higlighting
+    - functions
+    - preprocessor directives
+    - comments
+    - strings
+    - numbers
+    - data members
+    - punctuations
+    - keywords
+    - escape characters in string
 
 ## TODO
 - syntax highlighting

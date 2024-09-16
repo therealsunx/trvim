@@ -15,6 +15,8 @@
 editorconf editor;
 extern settingsType settings;
 
+char test[] = "hehehshshsh \
+               heheheheheheh";
 void disableRawMode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
     die("tcsetattr");

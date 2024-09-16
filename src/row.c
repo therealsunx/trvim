@@ -75,17 +75,57 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
     char c = row->renderchars[i];
     if(isSeparator(c)){
       if(in_str){
-        if(c == '"' || c == '\'' || i==row->size-1){
+        if(c == '"' || c == '\''){
           in_str = 0;
           memset(&row->hlchars[ci], TK_STRING, i-ci);
           ci = i+1;
           continue;
-        } else {
-          // escape chars check
+        } else if(c == '\\') { // escape chars check
+          int _esclen = 1;
+          int _tp = NONE;
+
+          if(i+1 == row->rsize){ // @TODO: next line string
+            memset(&row->hlchars[ci], TK_STRING, i-ci);
+            memset(&row->hlchars[i], TK_PUNCTUATION, 1);
+          }else{
+            char _nc;
+            for(int _j=1; _j<=3 && _j+i<row->rsize; _j++){
+              _nc = row->renderchars[_j+i];
+              if(_tp==NONE){
+                  _esclen++;
+                  if(_nc>='0' && _nc<='9') _tp = DECIMAL;
+                  else if(_nc == 'x') _tp = HEX;
+                  else break;
+              }else if(_nc == '"' || _nc == '\''){
+                in_str = 0;
+                memset(&row->hlchars[ci], TK_STRING, i-ci);
+                memset(&row->hlchars[i], TK_PUNCTUATION, _esclen);
+                memset(&row->hlchars[i+_esclen], TK_STRING, 1);
+                i += _esclen;
+                ci = i+1;
+                _tp = NONE;
+                break;
+              }else if(_tp==DECIMAL){
+                if(_nc>='0' && _nc<='9') _esclen++;
+                else break;
+              } else if(_tp == HEX){
+                if(_nc>='0' && _nc<='9') _esclen++;
+                else if(_nc>='a' && _nc<='f') _esclen++;
+                else break;
+              }
+            }
+          }
+          if(_tp == NONE) continue;
+          memset(&row->hlchars[ci], TK_STRING, i-ci);
+          memset(&row->hlchars[i], TK_PUNCTUATION, _esclen);
+          i += _esclen-1;
+          ci = i+1;
           continue;
-        }
+        } if(i+1==row->rsize){
+          memset(&row->hlchars[ci], TK_STRING, i-ci);
+        }else continue;
       } else if(ci != i){
-        if(ci>0 && row->renderchars[ci-1] == syntax->preprocbeg){
+        if(syntax->flags & HL_PREPROC && ci>0 && row->renderchars[ci-1] == syntax->preprocbeg){
           int __hl = 0, _len = i-ci;
           for(int j=0; syntax->preprocs[j]; j++){
             int _klen  = strlen(syntax->preprocs[j]);

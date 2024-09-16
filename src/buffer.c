@@ -33,7 +33,7 @@ void initBuffer(buffer *buf) {
 void addWelcomeMsg(buffer *buf, abuf *ab) {
   char wlc[80];
   int wlclen =
-      snprintf(wlc, sizeof(wlc), "therealtxt editor v %s", EDITOR_VERSION);
+      snprintf(wlc, sizeof(wlc), "therealtxt editor v%s", EDITOR_VERSION);
   if (wlclen > buf->size.x)
     wlclen = buf->size.x;
 

@@ -9,6 +9,12 @@ typedef struct {
   int y;
 } vec2;
 
+enum escapechars {
+  NONE=0,
+  DECIMAL,
+  HEX
+};
+
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
 void clearTerminal();
