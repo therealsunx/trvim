@@ -12,7 +12,8 @@ typedef struct {
 enum escapechars {
   NONE=0,
   DECIMAL,
-  HEX
+  HEX,
+  TERMINATE,
 };
 
 int getWindowSize(int *rows, int *cols);

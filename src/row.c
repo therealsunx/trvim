@@ -73,7 +73,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
   for (int i = 0, ci = 0; i < row->rsize; i++) {
 
     char c = row->renderchars[i];
-    if(isSeparator(c)){
+    if(isSeparator(c) || i+1==row->size){
       if(in_str){
         if(c == '"' || c == '\''){
           in_str = 0;
@@ -103,7 +103,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
                 memset(&row->hlchars[i+_esclen], TK_STRING, 1);
                 i += _esclen;
                 ci = i+1;
-                _tp = NONE;
+                _tp = TERMINATE;
                 break;
               }else if(_tp==DECIMAL){
                 if(_nc>='0' && _nc<='9') _esclen++;
@@ -115,7 +115,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
               }
             }
           }
-          if(_tp == NONE) continue;
+          if(_tp == TERMINATE) continue;
           memset(&row->hlchars[ci], TK_STRING, i-ci);
           memset(&row->hlchars[i], TK_PUNCTUATION, _esclen);
           i += _esclen-1;

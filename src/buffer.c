@@ -67,9 +67,22 @@ void bufferDrawRows(buffer *buf, abuf *ab){
       for(int i=0; i<len; i++){
         int _clr = hlTokentoColorIndex(hl[i]);
         if(hl[i] != TK_IGNORE && hl[i] != _ptk){
-          char _tcstr[16];
-          if(_ptk == TK_MATCH) abAppend(ab, "\x1b[49m", 5);
-          int _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[%dm", _clr);
+          if(_ptk == TK_MATCH || _ptk == TK_KEYWORD3) abAppend(ab, "\x1b[0m", 5);
+
+          char _tcstr[24];
+          int _cl;
+          switch(hl[i]){
+            case TK_MATCH:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm", _clr, 0);
+              break;
+            case TK_KEYWORD3:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
+              break;
+            default:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
+              break;
+          }
+
           abAppend(ab, _tcstr, _cl);
           _ptk = hl[i];
         }

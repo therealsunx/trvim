@@ -23,10 +23,9 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - punctuations
     - keywords
     - escape characters in string
+    - 8bit colors instead of 4 bits
 
 ## TODO
-- syntax highlighting
-    - 8bit colors instead of 4 bits
 - absolute and relative line number
 - status msg bar
     - mode indicator

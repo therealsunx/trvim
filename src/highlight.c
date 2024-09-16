@@ -4,7 +4,7 @@
 char *C_FMATCH[] = {".c", ".h", ".cpp", ".hpp", NULL};
 char *C_KEYWORDS[] = {
   "switch", "if", "while", "for", "break", "continue", "return", "else",
-  "struct", "union", "typedef", "static", "enum", "class", "case",
+  "struct", "union", "typedef", "static", "enum", "class", "case", "extern", "default",
   "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
   "void|", 
   NULL
@@ -31,27 +31,27 @@ int HLDB_SIZE = sizeof(HLDB)/sizeof(HLDB[0]);
 int hlTokentoColorIndex(unsigned char hl) {
   switch (hl) {
     case TK_NUMBER:
-      return 95;
+      return 206; //95;
     case TK_COMMENT:
-      return 37;
+      return 244; //37;
     case TK_KEYWORD1:
-      return 91;
+      return 202; //91;
     case TK_KEYWORD2:
-      return 93;
+      return 220; //93;
     case TK_KEYWORD3:
-      return 92;
+      return 142; //92;
     case TK_KEYWORD4:
-      return 94;
+      return 64; //94;
     case TK_PREPROC:
-      return 36;
+      return 71; //36;
     case TK_PUNCTUATION:
-      return 33;
+      return 166; //33;
     case TK_STRING:
-      return 32;
+      return 106; //32;
     case TK_MATCH:
-      return 43;
+      return 227; //43;
     case TK_NORMAL:
     default:
-      return 39;
+      return 250; //39;
   }
 }
