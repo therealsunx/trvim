@@ -13,8 +13,8 @@ typedef struct {
 } state_t;
 
 typedef struct {
-  vec2 cursor, size, offset;
-  int row_size, dirty, render_x;
+  vec2 cursor, view_size, size, offset;
+  int row_size, dirty, render_x, linenumcol_sz;
   state_t st;
   erow *rows;
   char *filename;
@@ -22,6 +22,8 @@ typedef struct {
 } buffer;
 
 void initBuffer(buffer *buf);
+void bufferUpdateSize(buffer *buf, int sx, int sy);
+void addColumn(buffer *buf, abuf *ab, int linenum);
 void addWelcomeMsg(buffer *buf, abuf *ab);
 void bufferDrawRows(buffer *buf, abuf *ab);
 void bufferDrawStatusBar(buffer *buf, abuf *ab);

@@ -1,7 +1,7 @@
 #pragma once
 
-#define DEF_SETTINGS {4, 4}
+#define DEF_SETTINGS {4, 4, 1}
 
 typedef struct {
-  int scrollpadding, tabwidth;
+  int scrollpadding, tabwidth, relativelinenum;
 } settingsType;

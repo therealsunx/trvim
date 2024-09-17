@@ -43,11 +43,18 @@ void initEditor() {
   editor.statusmsg[0] = '\0';
   editor.statusmsg_time = 0;
 
-  if (getWindowSize(&editor.screen_size.y, &editor.screen_size.x) == -1)
+  editorUpdateSize();
+}
+
+void editorUpdateSize(){
+  vec2 _sz;
+  if (getWindowSize(&_sz.y, &_sz.x) == -1)
     die("invalid window size");
 
-  editor.buf.size.y = editor.screen_size.y-2;
-  editor.buf.size.x = editor.screen_size.x;
+  if(_sz.x == editor.screen_size.x && _sz.y == editor.screen_size.y) return;
+  editor.screen_size.x=_sz.x;
+  editor.screen_size.y=_sz.y;
+  bufferUpdateSize(&editor.buf, editor.screen_size.x, editor.screen_size.y-2);
 }
 
 void editorDrawBuffers(abuf *ab) {
@@ -79,6 +86,7 @@ void editorSetStatusMsg(const char *fmt, ...) {
 }
 
 void editorRefreshScreen() {
+  editorUpdateSize();
   editorScroll();
   abuf ab = ABUF_INIT;
 

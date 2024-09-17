@@ -24,13 +24,12 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - keywords
     - escape characters in string
     - 8bit colors instead of 4 bits
+- absolute and relative line number
 
 ## TODO
-- absolute and relative line number
 - status msg bar
     - mode indicator
     - command buffer
-- text wrap
 - vim operation modes
     - buffer modes
     - normal mode

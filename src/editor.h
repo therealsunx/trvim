@@ -20,6 +20,7 @@ void enableRawMode();
 void initEditor();
 
 // -- editor prcs --
+void editorUpdateSize();
 void editorDrawBuffers(abuf *appendbuffer);
 void editorShowCursor(abuf *ab);
 void editorDrawStsMsgBar(abuf *ab);

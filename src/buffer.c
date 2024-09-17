@@ -2,9 +2,9 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <string.h>
-#include <stdlib.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "buffer.h"
@@ -19,9 +19,11 @@ void initBuffer(buffer *buf) {
   *buf = (buffer){
       .cursor = DEF_VEC2,
       .offset = DEF_VEC2,
+      .view_size = DEF_VEC2,
       .size = DEF_VEC2,
       .row_size = 0,
       .render_x = 0,
+      .linenumcol_sz = 1,
       .dirty = 0,
       .rows = NULL,
       .filename = NULL,
@@ -30,33 +32,63 @@ void initBuffer(buffer *buf) {
   };
 }
 
+void bufferUpdateSize(buffer *buf, int sx, int sy) {
+  int _sz = buf->row_size;
+  buf->linenumcol_sz = 2; // one space and at least one char
+  while ((_sz /= 10))
+    buf->linenumcol_sz++;
+
+  buf->view_size.y = sy;
+  buf->view_size.x = sx;
+  buf->size.y = sy;
+  buf->size.x = sx-buf->linenumcol_sz;
+}
+void bufferUpdateLineColSz(buffer *buf){
+  int _sz = buf->row_size;
+  buf->linenumcol_sz = 2; // one space and at least one char
+  while ((_sz /= 10))
+    buf->linenumcol_sz++;
+  buf->size.x = buf->view_size.x-buf->linenumcol_sz;
+}
+
 void addWelcomeMsg(buffer *buf, abuf *ab) {
   char wlc[80];
   int wlclen =
       snprintf(wlc, sizeof(wlc), "therealtxt editor v%s", EDITOR_VERSION);
-  if (wlclen > buf->size.x)
-    wlclen = buf->size.x;
+  if (wlclen > buf->view_size.x)
+    wlclen = buf->view_size.x;
 
-  int padding = (buf->size.x - wlclen) / 2;
-  if (padding) {
-    abAppend(ab, "~", 1);
-    padding--;
-  }
-  while (padding--) {
-    abAppend(ab, " ", 1);
-  }
+  int padding = (buf->view_size.x - wlclen) / 2;
+  while (padding--) abAppend(ab, " ", 1);
   abAppend(ab, wlc, wlclen);
 }
 
-void bufferDrawRows(buffer *buf, abuf *ab){
-  for (int y = 0; y < buf->size.y; y++) {
+void addColumn(buffer *buf, abuf *ab, int linenum) {
+  char _lstr[32];
+  int val = linenum + 1, len;
+  if(settings.relativelinenum && linenum != buf->cursor.y){
+    val -= buf->cursor.y+1;
+    if(val<0) val=-val;
+    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
+  }else{
+    len = val <= buf->row_size
+      ? snprintf(_lstr, sizeof(_lstr), "\x1b[33m%-*d\x1b[0m ", buf->linenumcol_sz - 1, val)
+      : snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
+  }
+  abAppend(ab, _lstr, len);
+}
+
+void bufferDrawRows(buffer *buf, abuf *ab) {
+  for (int y = 0; y < buf->view_size.y; y++) {
     int _fr = y + buf->offset.y;
+    // --- line number column ---
+    addColumn(buf, ab, _fr);
+
     if (_fr >= buf->row_size) {
-      if (buf->row_size == 0 && y == buf->size.y / 3)
+      if (buf->row_size == 0 && y == buf->view_size.y / 3)
         addWelcomeMsg(buf, ab);
-      else
-        abAppend(ab, "~", 1);
-    } else if(buf->syntax){
+    } else if (buf->syntax) {
+
       // render according to metadata
       int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
 
@@ -64,23 +96,26 @@ void bufferDrawRows(buffer *buf, abuf *ab){
       unsigned char *hl = &buf->rows[_fr].hlchars[buf->offset.x];
       int _ptk = TK_IGNORE;
 
-      for(int i=0; i<len; i++){
+      for (int i = 0; i < len; i++) {
         int _clr = hlTokentoColorIndex(hl[i]);
-        if(hl[i] != TK_IGNORE && hl[i] != _ptk){
-          if(_ptk == TK_MATCH || _ptk == TK_KEYWORD3) abAppend(ab, "\x1b[0m", 5);
+        if (hl[i] != TK_IGNORE && hl[i] != _ptk) {
+          if (_ptk == TK_MATCH || _ptk == TK_KEYWORD3)
+            abAppend(ab, "\x1b[0m", 5);
 
           char _tcstr[24];
           int _cl;
-          switch(hl[i]){
-            case TK_MATCH:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm", _clr, 0);
-              break;
-            case TK_KEYWORD3:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
-              break;
-            default:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
-              break;
+          switch (hl[i]) {
+          case TK_MATCH:
+            _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm",
+                           _clr, 0);
+            break;
+          case TK_KEYWORD3:
+            _cl =
+                snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
+            break;
+          default:
+            _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
+            break;
           }
 
           abAppend(ab, _tcstr, _cl);
@@ -88,7 +123,8 @@ void bufferDrawRows(buffer *buf, abuf *ab){
         }
         abAppend(ab, &ch[i], 1);
       }
-    }else {
+    } else {
+      // TODO: match token only highlight
       int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
       abAppend(ab, &buf->rows[_fr].renderchars[buf->offset.x], len);
     }
@@ -97,21 +133,22 @@ void bufferDrawRows(buffer *buf, abuf *ab){
   }
 }
 
-void bufferDrawStatusBar(buffer *buf, abuf *ab){
+void bufferDrawStatusBar(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[100m", 6);
 
   char lstatus[80], rstatus[80];
   int len = snprintf(lstatus, sizeof(lstatus), "%.20s [%s] %.3s",
-                     buf->filename ? buf->filename : "[No name]", buf->syntax?buf->syntax->filetype:"nt",
+                     buf->filename ? buf->filename : "[No name]",
+                     buf->syntax ? buf->syntax->filetype : "nt",
                      buf->dirty ? "[+]" : "");
-  if (len > buf->size.x)
-    len = buf->size.x;
+  if (len > buf->view_size.x)
+    len = buf->view_size.x;
 
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", buf->cursor.y, buf->row_size,
-                      buf->cursor.x);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", buf->cursor.y,
+                      buf->row_size, buf->cursor.x);
 
   abAppend(ab, lstatus, len);
-  for (; len < buf->size.x - rlen; len++)
+  for (; len < buf->view_size.x - rlen; len++)
     abAppend(ab, " ", 1);
   abAppend(ab, rstatus, rlen);
 
@@ -119,18 +156,17 @@ void bufferDrawStatusBar(buffer *buf, abuf *ab){
   abAppend(ab, "\x1b[m", 3);
 }
 
-void bufferShowCursor(buffer *buf, abuf *ab){
+void bufferShowCursor(buffer *buf, abuf *ab) {
   char _cbuf[32];
   snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH",
            buf->cursor.y - buf->offset.y + 1,
-           buf->render_x - buf->offset.x + 1);
+           buf->render_x - buf->offset.x + buf->linenumcol_sz + 1);
   abAppend(ab, _cbuf, strlen(_cbuf));
   abAppend(ab, "\x1b[?25h", 6); // show the cursor
 }
 
-void bufferMoveCursor(buffer *buf, int key){
-  erow *row = buf->cursor.y >= buf->row_size ?
-      NULL : &buf->rows[buf->cursor.y];
+void bufferMoveCursor(buffer *buf, int key) {
+  erow *row = buf->cursor.y >= buf->row_size ? NULL : &buf->rows[buf->cursor.y];
 
   switch (key) {
   case ARROW_LEFT:
@@ -162,13 +198,12 @@ void bufferMoveCursor(buffer *buf, int key){
   }
 }
 
-void bufferScroll(buffer *buf){
+void bufferScroll(buffer *buf) {
   int _cy = buf->cursor.y - buf->offset.y;
 
   // vertical scroll handler
-  if (_cy > (buf->size.y - 1 - settings.scrollpadding))
-    buf->offset.y =
-        buf->cursor.y - buf->size.y + settings.scrollpadding + 1;
+  if (_cy > (buf->view_size.y - 1 - settings.scrollpadding))
+    buf->offset.y = buf->cursor.y - buf->view_size.y + settings.scrollpadding + 1;
   else if (_cy < settings.scrollpadding) {
     buf->offset.y = buf->cursor.y - settings.scrollpadding;
     if (buf->offset.y < 0)
@@ -181,22 +216,25 @@ void bufferScroll(buffer *buf){
           ? rowCursorToRenderX(&buf->rows[buf->cursor.y], buf->cursor.x)
           : 0;
   int _cx = buf->render_x - buf->offset.x;
-  if (_cx >= buf->size.x - 1)
-    buf->offset.x = buf->render_x - buf->size.x + 1;
+  if (_cx >= buf->view_size.x - 1)
+    buf->offset.x = buf->render_x - buf->view_size.x + 1;
   else if (_cx < 0)
     buf->offset.x = buf->render_x;
 }
 
-void bufferUpdateRow(buffer *buf, erow *row){
+void bufferUpdateRow(buffer *buf, erow *row) {
   rowUpdate(row);
-  if(buf->syntax) rowUpdateSyntax(row, buf->syntax);
+  if (buf->syntax)
+    rowUpdateSyntax(row, buf->syntax);
 }
 
-void bufferInsertRow(buffer *buf, int index, char *s, size_t len){
-  if(index < 0 || index > buf->row_size) return;
+void bufferInsertRow(buffer *buf, int index, char *s, size_t len) {
+  if (index < 0 || index > buf->row_size)
+    return;
 
   buf->rows = realloc(buf->rows, sizeof(erow) * (buf->row_size + 1));
-  memmove(&buf->rows[index+1], &buf->rows[index], (buf->row_size-index) * sizeof(erow));
+  memmove(&buf->rows[index + 1], &buf->rows[index],
+          (buf->row_size - index) * sizeof(erow));
 
   erow *_rw = &buf->rows[index];
   _rw->size = len;
@@ -211,15 +249,17 @@ void bufferInsertRow(buffer *buf, int index, char *s, size_t len){
   buf->dirty++;
 }
 
-void bufferDeleteRow(buffer *buf, int index){
-  if(index < 0 || index >= buf->row_size) return;
+void bufferDeleteRow(buffer *buf, int index) {
+  if (index < 0 || index >= buf->row_size)
+    return;
   rowFree(&buf->rows[index]);
-  memmove(&buf->rows[index], &buf->rows[index+1], (buf->row_size-index-1)*sizeof(erow));
+  memmove(&buf->rows[index], &buf->rows[index + 1],
+          (buf->row_size - index - 1) * sizeof(erow));
   buf->row_size--;
   buf->dirty++;
 }
 
-void bufferOpenFile(buffer *buf, char *filename){
+void bufferOpenFile(buffer *buf, char *filename) {
   free(buf->filename);
   buf->filename = strdup(filename);
 
@@ -238,12 +278,13 @@ void bufferOpenFile(buffer *buf, char *filename){
       llen--;
     bufferInsertRow(buf, buf->row_size, line, llen);
   }
+  bufferUpdateLineColSz(buf);
   free(line);
   fclose(fp);
   buf->dirty = 0;
 }
 
-void bufferInsertChar(buffer* buf, int ch){
+void bufferInsertChar(buffer *buf, int ch) {
   if (buf->cursor.y == buf->row_size) {
     bufferInsertRow(buf, buf->row_size, "", 0);
   }
@@ -254,34 +295,39 @@ void bufferInsertChar(buffer* buf, int ch){
   buf->dirty++;
 }
 
-void bufferInsertNewLine(buffer *buf){
-  if(buf->cursor.x==0) bufferInsertRow(buf, buf->cursor.y, "", 0);
-  else{
+void bufferInsertNewLine(buffer *buf) {
+  if (buf->cursor.x == 0)
+    bufferInsertRow(buf, buf->cursor.y, "", 0);
+  else {
     erow *row = &buf->rows[buf->cursor.y];
-    bufferInsertRow(buf, buf->cursor.y+1, &row->chars[buf->cursor.x], row->size-buf->cursor.x);
+    bufferInsertRow(buf, buf->cursor.y + 1, &row->chars[buf->cursor.x],
+                    row->size - buf->cursor.x);
     row = &buf->rows[buf->cursor.y];
     row->size = buf->cursor.x;
     row->chars[row->size] = '\0';
     bufferUpdateRow(buf, row);
   }
-  buf->cursor.y ++;
+  buf->cursor.y++;
   buf->cursor.x = 0;
   buf->st.cursx = 0;
   buf->dirty++;
 }
 
-void bufferDelChar(buffer *buf, int dir){
-  if(buf->cursor.y >= buf->row_size) return;
+void bufferDelChar(buffer *buf, int dir) {
+  if (buf->cursor.y >= buf->row_size)
+    return;
 
   erow *row = &buf->rows[buf->cursor.y];
   int _ps = buf->cursor.x + dir;
-  if(_ps>=0) {
+  if (_ps >= 0) {
     rowDeleteCharacter(row, _ps);
-    if(dir<0 || buf->cursor.x == row->size) buf->cursor.x--;
+    if (dir < 0 || buf->cursor.x == row->size)
+      buf->cursor.x--;
   } else {
-    if(buf->cursor.x == 0 && buf->cursor.y == 0) return;
-    buf->cursor.x = buf->rows[buf->cursor.y-1].size;
-    rowAppendString(&buf->rows[buf->cursor.y-1], row->chars, row->size);
+    if (buf->cursor.x == 0 && buf->cursor.y == 0)
+      return;
+    buf->cursor.x = buf->rows[buf->cursor.y - 1].size;
+    rowAppendString(&buf->rows[buf->cursor.y - 1], row->chars, row->size);
     bufferDeleteRow(buf, buf->cursor.y);
     buf->cursor.y--;
   }
@@ -306,9 +352,10 @@ char *bufferRowtoStr(buffer *buf, int *buflen) {
   return _cbuf;
 }
 
-int bufferSave(buffer *buf){
+int bufferSave(buffer *buf) {
   // buffer should have filename
-  if (!buf->filename) return -1;
+  if (!buf->filename)
+    return -1;
 
   int len;
   char *_cbuf = bufferRowtoStr(buf, &len);
@@ -330,22 +377,27 @@ int bufferSave(buffer *buf){
   return -1;
 }
 
-int bufferFind(buffer *buf, char *query, int dir){
+int bufferFind(buffer *buf, char *query, int dir) {
 
-  int _d = dir==0?1:dir;
-  for(int i=0, crs=buf->cursor.y; i<=buf->row_size; i++, crs+=_d){
+  int _d = dir == 0 ? 1 : dir;
+  for (int i = 0, crs = buf->cursor.y; i <= buf->row_size; i++, crs += _d) {
 
-    if(crs == -1) crs+=buf->row_size;
-    else if(crs == buf->row_size) crs = 0;
+    if (crs == -1)
+      crs += buf->row_size;
+    else if (crs == buf->row_size)
+      crs = 0;
 
     erow *row = &buf->rows[crs];
     char *match = strstr(row->renderchars, query);
-    if(match){
+    if (match) {
       int _cx = rowRendertoCursorX(row, match - row->renderchars);
-      if(i==0){
-        if(dir==1 && _cx<=buf->cursor.x) continue;
-        else if(dir==0 && _cx<buf->cursor.x) continue;
-        else if(dir==-1 && _cx>=buf->cursor.x) continue;
+      if (i == 0) {
+        if (dir == 1 && _cx <= buf->cursor.x)
+          continue;
+        else if (dir == 0 && _cx < buf->cursor.x)
+          continue;
+        else if (dir == -1 && _cx >= buf->cursor.x)
+          continue;
       }
 
       buf->cursor.y = crs;
@@ -356,22 +408,23 @@ int bufferFind(buffer *buf, char *query, int dir){
   return -1;
 }
 
-void bufferSelectSyntax(buffer *buf){
+void bufferSelectSyntax(buffer *buf) {
   buf->syntax = NULL;
-  if(buf->filename == NULL) return; 
+  if (buf->filename == NULL)
+    return;
 
   char *_extn = strchr(buf->filename, '.');
-  for(int j=0; j< HLDB_SIZE ; j++){
+  for (int j = 0; j < HLDB_SIZE; j++) {
     syntaxhl *s = &HLDB[j];
-    int i=0;
+    int i = 0;
     char *_mtch;
-    while((_mtch = s->filematch[i])!=NULL){
-      int isext = _mtch[0]=='.';
-      if((isext && _extn && !strcmp(_extn, _mtch)) ||
-          (!isext && strstr(buf->filename, _mtch))){
+    while ((_mtch = s->filematch[i]) != NULL) {
+      int isext = _mtch[0] == '.';
+      if ((isext && _extn && !strcmp(_extn, _mtch)) ||
+          (!isext && strstr(buf->filename, _mtch))) {
         buf->syntax = s;
 
-        for(int fr=0; fr<buf->row_size; fr++){
+        for (int fr = 0; fr < buf->row_size; fr++) {
           rowUpdateSyntax(&buf->rows[fr], buf->syntax);
         }
         return;
