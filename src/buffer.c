@@ -32,6 +32,13 @@ void initBuffer(buffer *buf) {
   };
 }
 
+void freeBuffer(buffer *buf){
+  for(int i=0; i<buf->row_size; i++){
+    free(buf->rows[i].chars);
+  }
+  free(buf->filename);
+}
+
 void bufferUpdateSize(buffer *buf, int sx, int sy) {
   int _sz = buf->row_size;
   buf->linenumcol_sz = 2; // one space and at least one char
@@ -165,28 +172,34 @@ void bufferShowCursor(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[?25h", 6); // show the cursor
 }
 
-void bufferMoveCursor(buffer *buf, int key) {
+void bufferMoveCursor(buffer *buf, int key, int mode) {
   erow *row = buf->cursor.y >= buf->row_size ? NULL : &buf->rows[buf->cursor.y];
+  int _rsz = row->size;
 
+  if(mode != INSERT) _rsz--;
   switch (key) {
-  case ARROW_LEFT:
-    if (buf->cursor.x > 0)
-      buf->cursor.x--;
-    buf->st.cursx = buf->cursor.x;
-    break;
-  case ARROW_RIGHT:
-    if (row && buf->cursor.x < row->size - 1)
-      buf->cursor.x++;
-    buf->st.cursx = buf->cursor.x;
-    break;
-  case ARROW_UP:
-    if (buf->cursor.y > 0)
-      buf->cursor.y--;
-    break;
-  case ARROW_DOWN:
-    if (buf->cursor.y < buf->row_size - 1)
-      buf->cursor.y++;
-    break;
+    case 'h':
+    case ARROW_LEFT:
+      if (buf->cursor.x > 0)
+        buf->cursor.x--;
+      buf->st.cursx = buf->cursor.x;
+      break;
+    case 'l':
+    case ARROW_RIGHT:
+      if (row && buf->cursor.x < _rsz)
+        buf->cursor.x++;
+      buf->st.cursx = buf->cursor.x;
+      break;
+    case 'k':
+    case ARROW_UP:
+      if (buf->cursor.y > 0)
+        buf->cursor.y--;
+      break;
+    case 'j':
+    case ARROW_DOWN:
+      if (buf->cursor.y < buf->row_size - 1)
+        buf->cursor.y++;
+      break;
   }
 
   // cursor state preservation
@@ -194,7 +207,7 @@ void bufferMoveCursor(buffer *buf, int key) {
     row = &buf->rows[buf->cursor.y];
     buf->cursor.x = buf->st.cursx;
     if (buf->cursor.x >= row->size)
-      buf->cursor.x = row->size == 0 ? 0 : row->size - 1;
+      buf->cursor.x = row->size == 0 ? 0 : _rsz;
   }
 }
 
@@ -220,6 +233,28 @@ void bufferScroll(buffer *buf) {
     buf->offset.x = buf->render_x - buf->view_size.x + 1;
   else if (_cx < 0)
     buf->offset.x = buf->render_x;
+}
+
+void bufferGotoEnd(buffer* buf, int mode){
+  if (buf->cursor.y < buf->row_size) {
+    buf->cursor.x = buf->rows[buf->cursor.y].size;
+    if(mode != INSERT) buf->cursor.x--;
+    buf->st.cursx = buf->cursor.x;
+  }
+}
+
+void bufferPageScroll(buffer *buf, int key){
+  if (key == PAGE_UP)
+    buf->cursor.y = buf->offset.y + settings.scrollpadding;
+  else {
+    buf->cursor.y =
+      buf->offset.y + buf->size.y - 1 - settings.scrollpadding;
+    if (buf->cursor.y >= buf->row_size)
+      buf->cursor.y = buf->row_size - 1;
+  }
+  int _times = buf->size.y;
+  while (_times--)
+    bufferMoveCursor(buf, key == PAGE_UP ? ARROW_UP : ARROW_DOWN, NORMAL);
 }
 
 void bufferUpdateRow(buffer *buf, erow *row) {
@@ -319,11 +354,16 @@ void bufferDelChar(buffer *buf, int dir) {
 
   erow *row = &buf->rows[buf->cursor.y];
   int _ps = buf->cursor.x + dir;
-  if (_ps >= 0) {
+  if (_ps >= 0 && _ps<row->size) {
     rowDeleteCharacter(row, _ps);
     if (dir < 0 || buf->cursor.x == row->size)
       buf->cursor.x--;
-  } else {
+  } else if(_ps == row->size){
+    if(buf->cursor.y+1 == buf->row_size) return;
+    erow *_nrow = &buf->rows[buf->cursor.y+1];
+    rowAppendString(row, _nrow->chars, _nrow->size);
+    bufferDeleteRow(buf, buf->cursor.y+1);
+  }else {
     if (buf->cursor.x == 0 && buf->cursor.y == 0)
       return;
     buf->cursor.x = buf->rows[buf->cursor.y - 1].size;

@@ -16,6 +16,12 @@ enum escapechars {
   TERMINATE,
 };
 
+enum MODE {
+  NORMAL = 0,
+  INSERT,
+  VISUAL
+};
+
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
 void clearTerminal();

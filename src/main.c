@@ -12,6 +12,6 @@ int main(int argc, char* argv[]) { // test comment
     editorRefreshScreen();
     editorProcessKeyPress();
   }
-
+  freeEditor();
   return 0;
 }
