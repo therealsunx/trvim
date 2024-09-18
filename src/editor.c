@@ -92,6 +92,13 @@ void editorSetStatusMsg(const char *fmt, ...) {
   editor.statusmsg_time = time(NULL);
 }
 
+void editorStatusBarUpdate(){
+  if(editor.mode == NORMAL) return;
+  editor.statusmsg_time = time(NULL);
+  if(editor.mode == INSERT) editorSetStatusMsg("-- INSERT --");
+  else if(editor.mode == VISUAL) editorSetStatusMsg("-- VISUAL --");
+}
+
 void editorRefreshScreen() {
   editorUpdateSize();
   editorScroll();
@@ -175,6 +182,10 @@ void editorProcessCommand(){
       editorSwitchMode(INSERT);
       break;
 
+    case '/':
+      editorFind("/%s");
+      break;
+
     case 'h':
     case 'j':
     case 'k':
@@ -227,6 +238,8 @@ void editorInsertModeKeyProc(int c) {
 }
 
 void editorSwitchMode(int mode){ // TODO: cursor pos
+  if(mode == NORMAL) editor.statusmsg_time = 0;
+
   if(editor.mode == INSERT)
     bufferMoveCursor(&editor.buf, ARROW_LEFT, mode);
   editor.mode = mode;
@@ -349,11 +362,11 @@ void editorFindCallback(char *query, int key) {
   }
 }
 
-void editorFind() {
+void editorFind(char *prompt) {
   vec2 _st_cur = editor.buf.cursor;
   vec2 _st_off = editor.buf.offset;
 
-  char *query = editorPrompt("Search: %s (Esc to cancel)", editorFindCallback);
+  char *query = editorPrompt(prompt? prompt: "Search: %s (Esc to cancel)", editorFindCallback);
   if (query) {
     if (editor.buf.st.query)
       free(editor.buf.st.query);

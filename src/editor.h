@@ -29,6 +29,7 @@ void editorDrawBuffers(abuf *appendbuffer);
 void editorShowCursor(abuf *ab);
 void editorDrawStsMsgBar(abuf *ab);
 void editorSetStatusMsg(const char *fmt, ...);
+void editorStatusBarUpdate();
 
 void editorRefreshScreen();
 void editorProcessKeyPress();
@@ -54,4 +55,4 @@ void editorDelChar(int dir);
 void editorSaveBuffer();
 char *editorPrompt(char *query, void (*callback)(char*, int));
 
-void editorFind();
+void editorFind(char *prompt);

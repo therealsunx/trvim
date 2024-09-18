@@ -174,9 +174,10 @@ void bufferShowCursor(buffer *buf, abuf *ab) {
 
 void bufferMoveCursor(buffer *buf, int key, int mode) {
   erow *row = buf->cursor.y >= buf->row_size ? NULL : &buf->rows[buf->cursor.y];
-  int _rsz = row->size;
 
+  int _rsz = row->size;
   if(mode != INSERT) _rsz--;
+
   switch (key) {
     case 'h':
     case ARROW_LEFT:
@@ -205,6 +206,10 @@ void bufferMoveCursor(buffer *buf, int key, int mode) {
   // cursor state preservation
   if (buf->cursor.y < buf->row_size) {
     row = &buf->rows[buf->cursor.y];
+
+    _rsz = row->size;
+    if(mode != INSERT) _rsz--;
+
     buf->cursor.x = buf->st.cursx;
     if (buf->cursor.x >= row->size)
       buf->cursor.x = row->size == 0 ? 0 : _rsz;
