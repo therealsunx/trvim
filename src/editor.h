@@ -42,7 +42,7 @@ void editorGotoEnd();
 void editorPageScroll(int key);
 int editorMoveCursor(int charKey);
 void editorScroll();
-void editorGotoNextWord(int dir, int _endflg, int _punc_incl);
+void editorGotoNextWord(int flags);
 
 void editorInsertRow(int index, char *s, size_t len);
 void editorDeleteRow(int index);

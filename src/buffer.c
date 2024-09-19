@@ -279,39 +279,56 @@ int bufferWordJump(buffer *buf, int dir, int _endflg, int _punc_incl){
   buf->cursor = _c;
   return 0;
 }
-*/
-int bufferWordJump(buffer *buf, int dir, int _endflg, int _punc_incl){
-  if(dir == 0) return 0;
 
+*/
+int bufferWordJump(buffer *buf, int flags){
+  int dir = flags & JMP_BACK?-1:1;
   vec2 _c = buf->cursor;
-  _c.x += dir;
 
   erow *_row = &buf->rows[_c.y];
-  int _upd = 0;
-  if(_row->size==0 || _c.x<0 || _c.x>=_row->size){
-    _c.y += dir;
-    if(_c.y<0 || _c.y>=buf->row_size) return 0;
-    _row = &buf->rows[_c.y];
-    _c.x = dir>0? 0:_row->size-1;
-    _upd++;
-  }
 
-  _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
-  if(_c.x == -1 && !_upd){
-    _c.y+=dir;
-    _c.x=0;
-    if(_c.y>=buf->row_size){
-      _c.y=buf->row_size-1;
-      _c.x=buf->rows[_c.y].size-1;
-    } else {
-      _row = &buf->rows[_c.y];
-      _c.x = dir>0? 0:_row->size-1;
-      _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
-      if(_c.x<0)_c.x=0;
+  int _lcp = _c.x; // last non-sep character position
+  int _found=0;
+
+  for(int i=0; i<2; i++){
+    while(_c.x>=0 && _c.x<_row->size){
+      char c = _row->chars[_c.x];
+
+      int _sep = flags & JMP_PUNC?c == ' ':isSeparator(c);
+
+      if(flags & JMP_END){
+        if(!_sep) _lcp = _c.x;
+        else if(_found && c != ' ') _lcp = _c.x;
+        else _found++;
+
+        _sep |= flags&JMP_BACK?_c.x==0:_c.x==_row->size-1;
+        if(_sep && (_lcp != buf->cursor.x || _c.y != buf->cursor.y)) {
+          _c.x = _lcp;
+          buf->cursor = _c;
+          return 1;
+        }
+      }else{
+        if(_sep) _found++;
+        else if(_found){
+          buf->cursor = _c;
+          return 1;
+        }
+      }
+      _c.x+=dir;
     }
+    _c.y += dir;
+    if(_c.y<0 || _c.y>=buf->row_size){
+      _c.x = flags&JMP_BACK?_row->size-1:0;
+      if(_c.x<0) _c.x=0;
+      _c.y -= dir;
+      buf->cursor = _c;
+      return 0;
+    }
+    _row = &buf->rows[_c.y];
+    _c.x = flags&JMP_BACK?_row->size-1:0;
+    if(_c.x<0) _c.x=0;
   }
   buf->cursor = _c;
-
   return 0;
 }
 

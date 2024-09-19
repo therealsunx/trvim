@@ -22,6 +22,12 @@ enum MODE {
   VISUAL
 };
 
+enum JUMP_FLAGS {
+  JMP_END = 0x1,
+  JMP_BACK = 0x2,
+  JMP_PUNC = 0x4,
+};
+
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
 void clearTerminal();
