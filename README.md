@@ -27,6 +27,7 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - + keywords
     - + escape characters in string
     - + 8bit colors instead of 4 bits
+    - + default highlights in any type
 - + absolute and relative line number
 - . status msg bar
     - + mode indicator

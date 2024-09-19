@@ -40,8 +40,10 @@ void editorVisualModeKeyProc(int key);
 
 void editorGotoEnd();
 void editorPageScroll(int key);
-void editorMoveCursor(int charKey);
+int editorMoveCursor(int charKey);
 void editorScroll();
+void editorGotoNextWord(int dir, int _endflg, int _punc_incl);
+
 void editorInsertRow(int index, char *s, size_t len);
 void editorDeleteRow(int index);
 void editorOpen(char* filename);

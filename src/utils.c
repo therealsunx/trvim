@@ -60,7 +60,7 @@ int clamp(int value, int min, int max){
 }
 
 int isSeparator(char c){
-  return c == ' ' || isPunct(c) || c == '\n' || c == '\0';
+  return c==' ' || isPunct(c) || c == '\n' || c == '\0';
 }
 
 int isPunct(char c){

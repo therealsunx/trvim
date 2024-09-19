@@ -94,18 +94,18 @@ void bufferDrawRows(buffer *buf, abuf *ab) {
     if (_fr >= buf->row_size) {
       if (buf->row_size == 0 && y == buf->view_size.y / 3)
         addWelcomeMsg(buf, ab);
-    } else if (buf->syntax) {
+    } else {
 
       // render according to metadata
       int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
 
       char *ch = &buf->rows[_fr].renderchars[buf->offset.x];
       unsigned char *hl = &buf->rows[_fr].hlchars[buf->offset.x];
-      int _ptk = TK_IGNORE;
+      int _ptk = TK_NORMAL;
 
       for (int i = 0; i < len; i++) {
         int _clr = hlTokentoColorIndex(hl[i]);
-        if (hl[i] != TK_IGNORE && hl[i] != _ptk) {
+        if (hl[i] != _ptk) {
           if (_ptk == TK_MATCH || _ptk == TK_KEYWORD3)
             abAppend(ab, "\x1b[0m", 5);
 
@@ -130,11 +130,12 @@ void bufferDrawRows(buffer *buf, abuf *ab) {
         }
         abAppend(ab, &ch[i], 1);
       }
-    } else {
-      // TODO: match token only highlight
-      int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
-      abAppend(ab, &buf->rows[_fr].renderchars[buf->offset.x], len);
     }
+    // else {
+    //  // TODO: match token only highlight
+    //  int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
+    //  abAppend(ab, &buf->rows[_fr].renderchars[buf->offset.x], len);
+    //}
     abAppend(ab, "\x1b[m\x1b[K", 6); // clear the line before drawing
     abAppend(ab, "\r\n", 2);
   }
@@ -172,7 +173,7 @@ void bufferShowCursor(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[?25h", 6); // show the cursor
 }
 
-void bufferMoveCursor(buffer *buf, int key, int mode) {
+int bufferMoveCursor(buffer *buf, int key, int mode) {
   erow *row = buf->cursor.y >= buf->row_size ? NULL : &buf->rows[buf->cursor.y];
 
   int _rsz = row->size;
@@ -181,25 +182,34 @@ void bufferMoveCursor(buffer *buf, int key, int mode) {
   switch (key) {
     case 'h':
     case ARROW_LEFT:
-      if (buf->cursor.x > 0)
+      if (buf->cursor.x > 0){
         buf->cursor.x--;
-      buf->st.cursx = buf->cursor.x;
+        buf->st.cursx = buf->cursor.x;
+      } else{
+        buf->st.cursx = buf->cursor.x;
+        return 0;
+      }
       break;
     case 'l':
     case ARROW_RIGHT:
-      if (row && buf->cursor.x < _rsz)
+      if (row && buf->cursor.x < _rsz){
         buf->cursor.x++;
-      buf->st.cursx = buf->cursor.x;
+        buf->st.cursx = buf->cursor.x;
+      }else{
+        buf->st.cursx = buf->cursor.x;
+        return 0;
+      }
       break;
     case 'k':
     case ARROW_UP:
-      if (buf->cursor.y > 0)
-        buf->cursor.y--;
+      if (buf->cursor.y > 0) buf->cursor.y--;
+      else return 0;
       break;
     case 'j':
     case ARROW_DOWN:
       if (buf->cursor.y < buf->row_size - 1)
         buf->cursor.y++;
+      else return 0;
       break;
   }
 
@@ -214,6 +224,7 @@ void bufferMoveCursor(buffer *buf, int key, int mode) {
     if (buf->cursor.x >= row->size)
       buf->cursor.x = row->size == 0 ? 0 : _rsz;
   }
+  return 1;
 }
 
 void bufferScroll(buffer *buf) {
@@ -228,14 +239,14 @@ void bufferScroll(buffer *buf) {
       buf->offset.y = 0;
   }
 
-  // horizontal scroll handler
+  // horizontal scroll 2/3+4 -5 handler
   buf->render_x =
       buf->cursor.y < buf->row_size
           ? rowCursorToRenderX(&buf->rows[buf->cursor.y], buf->cursor.x)
           : 0;
   int _cx = buf->render_x - buf->offset.x;
-  if (_cx >= buf->view_size.x - 1)
-    buf->offset.x = buf->render_x - buf->view_size.x + 1;
+  if (_cx >= buf->view_size.x - buf->linenumcol_sz - 1)
+    buf->offset.x = buf->render_x - buf->view_size.x + buf->linenumcol_sz + 1;
   else if (_cx < 0)
     buf->offset.x = buf->render_x;
 }
@@ -246,6 +257,62 @@ void bufferGotoEnd(buffer* buf, int mode){
     if(mode != INSERT) buf->cursor.x--;
     buf->st.cursx = buf->cursor.x;
   }
+}
+
+/*
+int bufferWordJump(buffer *buf, int dir, int _endflg, int _punc_incl){
+  if(dir == 0) return 0;
+
+  vec2 _c = buf->cursor;
+  for(int i=0; i<2 && _c.y>=0 && _c.y<buf->row_size; i++, _c.y+=dir){
+    erow *_row = &buf->rows[_c.y];
+
+    if(i==1) _c.x = dir>0?0:_row->size-1;
+
+    _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
+    if(_c.x > 0){
+      buf->cursor = _c;
+      return 1;
+    }
+  }
+  if(_c.x<0) _c.x=0;
+  buf->cursor = _c;
+  return 0;
+}
+*/
+int bufferWordJump(buffer *buf, int dir, int _endflg, int _punc_incl){
+  if(dir == 0) return 0;
+
+  vec2 _c = buf->cursor;
+  _c.x += dir;
+
+  erow *_row = &buf->rows[_c.y];
+  int _upd = 0;
+  if(_row->size==0 || _c.x<0 || _c.x>=_row->size){
+    _c.y += dir;
+    if(_c.y<0 || _c.y>=buf->row_size) return 0;
+    _row = &buf->rows[_c.y];
+    _c.x = dir>0? 0:_row->size-1;
+    _upd++;
+  }
+
+  _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
+  if(_c.x == -1 && !_upd){
+    _c.y+=dir;
+    _c.x=0;
+    if(_c.y>=buf->row_size){
+      _c.y=buf->row_size-1;
+      _c.x=buf->rows[_c.y].size-1;
+    } else {
+      _row = &buf->rows[_c.y];
+      _c.x = dir>0? 0:_row->size-1;
+      _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
+      if(_c.x<0)_c.x=0;
+    }
+  }
+  buf->cursor = _c;
+
+  return 0;
 }
 
 void bufferPageScroll(buffer *buf, int key){
@@ -259,13 +326,12 @@ void bufferPageScroll(buffer *buf, int key){
   }
   int _times = buf->size.y;
   while (_times--)
-    bufferMoveCursor(buf, key == PAGE_UP ? ARROW_UP : ARROW_DOWN, NORMAL);
+    if(!bufferMoveCursor(buf, key == PAGE_UP ? ARROW_UP : ARROW_DOWN, NORMAL)) break;;
 }
 
 void bufferUpdateRow(buffer *buf, erow *row) {
   rowUpdate(row);
-  if (buf->syntax)
-    rowUpdateSyntax(row, buf->syntax);
+  rowUpdateSyntax(row, buf->syntax);
 }
 
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len) {
@@ -361,8 +427,7 @@ void bufferDelChar(buffer *buf, int dir) {
   int _ps = buf->cursor.x + dir;
   if (_ps >= 0 && _ps<row->size) {
     rowDeleteCharacter(row, _ps);
-    if (dir < 0 || buf->cursor.x == row->size)
-      buf->cursor.x--;
+    if (dir < 0) buf->cursor.x--;
   } else if(_ps == row->size){
     if(buf->cursor.y+1 == buf->row_size) return;
     erow *_nrow = &buf->rows[buf->cursor.y+1];

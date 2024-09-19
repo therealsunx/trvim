@@ -62,12 +62,12 @@ int setType(unsigned char* hlch, char *str, int len, syntaxhl *syn) {
 }
 
 void rowUpdateSyntax(erow *row, syntaxhl *syntax){
-  if(!syntax) return; // TODO: actually use patterns in syntax
-
 
   free(row->hlchars);
   row->hlchars = malloc(row->rsize);
-  memset(row->hlchars, TK_IGNORE, row->rsize);
+  memset(row->hlchars, TK_NORMAL, row->rsize);
+
+  if(!syntax) return;
 
   int in_str = 0;
   for (int i = 0, ci = 0; i < row->rsize; i++) {
@@ -214,4 +214,52 @@ void rowAppendString(erow *row, char *s, size_t len){
   row->size += len;
   row->chars[row->size] = '\0';
   rowUpdate(row);
+}
+
+/*
+int rowWordJump(erow* row, int dir, int start, int _endflg, int _punc_incl){
+  int _cx = start;
+  int _found = 0;
+  while(_cx>=0 && _cx<row->size){
+    char c = row->chars[_cx];
+
+    int _cr = _punc_incl?c==' ':isSeparator(c);
+    int _oob = _cx==0 || _cx+1 == row->size;
+    if(_endflg){
+      if(_cr && _cx-dir!=start) return _cx-dir;
+      else if(_oob) return _cx;
+    }else if(_found){
+      if(dir<0 && _cr) return _cx-dir;
+      if(!_cr) return _cx;
+    }
+    if(!_found) _found = _cr;
+    _cx+=dir;
+  }
+  if(_found) return _cx-dir;
+  return -1;
+}
+*/
+
+int rowWordJump(erow* row, int dir, int start, int _endflg, int _punc_incl){
+  int _cx = start;
+  int _found = 0;
+  while(_cx>=0 && _cx<row->size){
+    char c = row->chars[_cx];
+    int _pns = !_punc_incl && isPunct(c);
+    int _spc = c == ' ';
+    int _cr = _pns || _spc;
+    int _oob = _cx==0 || _cx+1 == row->size;
+
+    if(_endflg){
+      if(_pns) return _cx;
+      else if(_spc && _cx!=start) return _cx-dir;
+      else if(_oob) return _cx;
+    } else {
+      if(_pns) return _cx;
+      if(_found && !_cr) return _cx;
+    }
+    if(!_found) _found = _cr;
+    _cx+=dir;
+  }
+  return -1;
 }

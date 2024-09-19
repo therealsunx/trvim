@@ -8,8 +8,7 @@
 #define HL_STRING (1<<5)
 
 enum hlTokens {
-  TK_IGNORE = 0,
-  TK_NORMAL,
+  TK_NORMAL=1,
   TK_NUMBER,
   TK_KEYWORD1,
   TK_KEYWORD2,

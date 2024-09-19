@@ -17,3 +17,4 @@ int rowCursorToRenderX(erow *row, int cursor_x);
 int rowRendertoCursorX(erow *row, int render_x);
 void rowFree(erow *row);
 void rowAppendString(erow *row, char *s, size_t len);
+int rowWordJump(erow* row, int dir, int start, int _endflg, int _punc_incl);

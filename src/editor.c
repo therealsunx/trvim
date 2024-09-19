@@ -186,6 +186,25 @@ void editorProcessCommand(){
       editorFind("/%s");
       break;
 
+    case 'w':
+      editorGotoNextWord(1, 0, 0);
+      break;
+    case 'W':
+      editorGotoNextWord(1, 0, 1);
+      break;
+    case 'e':
+      editorGotoNextWord(1, 1, 0);
+      break;
+    case 'E':
+      editorGotoNextWord(1, 1, 1);
+      break;
+    case 'b':
+      editorGotoNextWord(-1, 1, 0);
+      break;
+    case 'B':
+      editorGotoNextWord(-1, 1, 1);
+      break;
+
     case 'h':
     case 'j':
     case 'k':
@@ -252,9 +271,13 @@ void editorVisualModeKeyProc(int c){
 
 void editorGotoEnd(){bufferGotoEnd(&editor.buf, editor.mode);}
 
+void editorGotoNextWord(int dir, int _endflg, int _punc_incl){
+  bufferWordJump(&editor.buf, dir, _endflg, _punc_incl);
+}
+
 void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
 
-void editorMoveCursor(int key) { bufferMoveCursor(&editor.buf, key, editor.mode); }
+int editorMoveCursor(int key) { return bufferMoveCursor(&editor.buf, key, editor.mode); }
 
 void editorScroll() { bufferScroll(&editor.buf); }
 
