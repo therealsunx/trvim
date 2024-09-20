@@ -39,8 +39,8 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - . absolute and relative line jumps
         - = movement keybinds (h,j,k,l)
         - = '/' key find string
-        - . f : find character after cursor
-        - . F : find character before cursor
+        - + f : find character after cursor
+        - + F : find character before cursor
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)

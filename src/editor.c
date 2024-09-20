@@ -177,6 +177,22 @@ void editorProcessCommand(){
   if(isStackEmpty(&editor.cmdstk)) return;
 
   int c = pop(&editor.cmdstk);
+
+  int pc = 0;
+  if(!isStackEmpty(&editor.cmdstk)){
+    pc = pop(&editor.cmdstk);
+  }
+
+  if(pc == 'f'){
+    editorFindChar(c, 0);
+    emptyStack(&editor.cmdstk);
+    return;
+  } else if(pc == 'F'){
+    editorFindChar(c, JMP_BACK);
+    emptyStack(&editor.cmdstk);
+    return;
+  }
+
   switch(c){
     case 'i':
       editorSwitchMode(INSERT);
@@ -273,6 +289,10 @@ void editorGotoEnd(){bufferGotoEnd(&editor.buf, editor.mode);}
 
 void editorGotoNextWord(int flags){
   bufferWordJump(&editor.buf, flags);
+}
+
+void editorFindChar(char char_, int dirflag){
+  bufferFindChar(&editor.buf, char_, dirflag);
 }
 
 void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }

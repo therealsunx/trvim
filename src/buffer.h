@@ -35,6 +35,7 @@ void bufferGotoEnd(buffer *buf, int mode);
 void bufferScroll(buffer *buf);
 void bufferPageScroll(buffer *buf, int key);
 int bufferWordJump(buffer *buf, int flags);
+int bufferFindChar(buffer *buf, char char_, int dirflg);
 
 void bufferUpdateRow(buffer *buf, erow *row);
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len);

@@ -43,6 +43,7 @@ void editorPageScroll(int key);
 int editorMoveCursor(int charKey);
 void editorScroll();
 void editorGotoNextWord(int flags);
+void editorFindChar(char char_, int dirflag);
 
 void editorInsertRow(int index, char *s, size_t len);
 void editorDeleteRow(int index);

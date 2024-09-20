@@ -88,6 +88,7 @@ void addColumn(buffer *buf, abuf *ab, int linenum) {
 void bufferDrawRows(buffer *buf, abuf *ab) {
   for (int y = 0; y < buf->view_size.y; y++) {
     int _fr = y + buf->offset.y;
+
     // --- line number column ---
     addColumn(buf, ab, _fr);
 
@@ -131,11 +132,6 @@ void bufferDrawRows(buffer *buf, abuf *ab) {
         abAppend(ab, &ch[i], 1);
       }
     }
-    // else {
-    //  // TODO: match token only highlight
-    //  int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
-    //  abAppend(ab, &buf->rows[_fr].renderchars[buf->offset.x], len);
-    //}
     abAppend(ab, "\x1b[m\x1b[K", 6); // clear the line before drawing
     abAppend(ab, "\r\n", 2);
   }
@@ -306,7 +302,27 @@ int bufferWordJump(buffer *buf, int flags){
 
   crs.x = clamp(crs.x, 0, buf->rows[crs.y].size-1);
   buf->cursor = crs;
+  buf->st.cursx = crs.x;
   return _nomore!=0;
+}
+
+int bufferFindChar(buffer *buf, char char_, int dirflg){
+  int dir = dirflg&JMP_BACK?-1:1;
+  vec2 crs = buf->cursor;
+  if(crs.y<0 || crs.y>=buf->row_size) return 0;
+
+  erow *row = &buf->rows[crs.y];
+  crs.x += dir; // start  from next
+
+  char c;
+  for(;crs.x<row->size && crs.x>=0; crs.x+=dir){
+    c = row->chars[crs.x];
+    if(c == char_){
+      buf->cursor = crs;
+      return 1;
+    }
+  }
+  return 0;
 }
 
 void bufferPageScroll(buffer *buf, int key){
