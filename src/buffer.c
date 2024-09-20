@@ -259,77 +259,54 @@ void bufferGotoEnd(buffer* buf, int mode){
   }
 }
 
-/*
-int bufferWordJump(buffer *buf, int dir, int _endflg, int _punc_incl){
-  if(dir == 0) return 0;
-
-  vec2 _c = buf->cursor;
-  for(int i=0; i<2 && _c.y>=0 && _c.y<buf->row_size; i++, _c.y+=dir){
-    erow *_row = &buf->rows[_c.y];
-
-    if(i==1) _c.x = dir>0?0:_row->size-1;
-
-    _c.x = rowWordJump(_row, dir, _c.x, _endflg, _punc_incl);
-    if(_c.x > 0){
-      buf->cursor = _c;
-      return 1;
-    }
-  }
-  if(_c.x<0) _c.x=0;
-  buf->cursor = _c;
-  return 0;
-}
-
-*/
 int bufferWordJump(buffer *buf, int flags){
-  int dir = flags & JMP_BACK?-1:1;
-  vec2 _c = buf->cursor;
+  int dir = flags & JMP_BACK? -1: 1;
+  vec2 crs = buf->cursor, lnsp = buf->cursor;
 
-  erow *_row = &buf->rows[_c.y];
+  int _fnd = 0;
+  int _lj = 0;
+  while(crs.y >= 0 && crs.y<buf->row_size){
+    erow *row = &buf->rows[crs.y];
+    if(_lj) crs.x = dir>0?0:(row->size-1);
 
-  int _lcp = _c.x; // last non-sep character position
-  int _found=0;
+    while(crs.x>=0 && crs.x<row->size){
+      char c = row->chars[crs.x];
+      int _sep = flags&JMP_PUNC?c==' ':isSeparator(c);
 
-  for(int i=0; i<2; i++){
-    while(_c.x>=0 && _c.x<_row->size){
-      char c = _row->chars[_c.x];
-
-      int _sep = flags & JMP_PUNC?c == ' ':isSeparator(c);
-
-      if(flags & JMP_END){
-        if(!_sep) _lcp = _c.x;
-        else if(_found && c != ' ') _lcp = _c.x;
-        else _found++;
-
-        _sep |= flags&JMP_BACK?_c.x==0:_c.x==_row->size-1;
-        if(_sep && (_lcp != buf->cursor.x || _c.y != buf->cursor.y)) {
-          _c.x = _lcp;
-          buf->cursor = _c;
-          return 1;
-        }
-      }else{
-        if(_sep) _found++;
-        else if(_found){
-          buf->cursor = _c;
-          return 1;
-        }
+      if(flags&JMP_END){
+        if(_sep){
+          if(!vec2areSame(lnsp, buf->cursor)) {
+            crs = lnsp;
+            _fnd++;
+            break;
+          } else if(c != ' ' && !vec2areSame(crs, buf->cursor)) {
+            _fnd++;
+            break;
+          } } else lnsp = crs;
+      } else {
+        if(_sep) _fnd++;
+        if((_lj || _fnd) && c != ' ' && !vec2areSame(buf->cursor, crs)) break;
       }
-      _c.x+=dir;
+
+      crs.x += dir;
     }
-    _c.y += dir;
-    if(_c.y<0 || _c.y>=buf->row_size){
-      _c.x = flags&JMP_BACK?_row->size-1:0;
-      if(_c.x<0) _c.x=0;
-      _c.y -= dir;
-      buf->cursor = _c;
-      return 0;
-    }
-    _row = &buf->rows[_c.y];
-    _c.x = flags&JMP_BACK?_row->size-1:0;
-    if(_c.x<0) _c.x=0;
+    crs.x = clamp(crs.x, 0, row->size-1);
+
+    if(_lj || (_fnd && !vec2areSame(buf->cursor, crs))) break;
+    else _lj++;
+    if((flags&JMP_END) && !vec2areSame(crs, buf->cursor)) break;
+
+    crs.y += dir;
   }
-  buf->cursor = _c;
-  return 0;
+
+  int _nomore = 1; // if we went out of bounds, not a successful cmd invoc.
+  if(crs.y<0) crs.y=0;
+  else if(crs.y>=buf->row_size) crs.y=buf->row_size-1;
+  else _nomore = 0;
+
+  crs.x = clamp(crs.x, 0, buf->rows[crs.y].size-1);
+  buf->cursor = crs;
+  return _nomore!=0;
 }
 
 void bufferPageScroll(buffer *buf, int key){

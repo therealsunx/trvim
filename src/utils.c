@@ -54,9 +54,18 @@ void die(const char *s) { // because func name:kill was already used
 }
 
 int clamp(int value, int min, int max){
+  if(max<min){
+    int _t = min;
+    min = max;
+    max = _t;
+  }
   if(value<min) return min;
   if(value>max) return max;
   return value;
+}
+
+int vec2areSame(vec2 v1, vec2 v2){
+  return v1.x == v2.x && v1.y == v2.y;
 }
 
 int isSeparator(char c){

@@ -34,6 +34,7 @@ void clearTerminal();
 void die(const char *s);
 
 int clamp(int value, int min, int max);
+int vec2areSame(vec2 v1, vec2 v2);
 
 int isSeparator(char c);
 int isPunct(char c);
