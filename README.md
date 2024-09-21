@@ -34,13 +34,14 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - . command buffer
 - . vim operation modes
     - . normal mode
-        - . command parsing
+        - = command parsing
         - . number+command:replication
         - . absolute and relative line jumps
         - = movement keybinds (h,j,k,l)
         - = '/' key find string
         - = f : find character after cursor
         - = F : find character before cursor
+        - . r : replace character with next one
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)
@@ -56,6 +57,10 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - = cursor range increase
         - = thin cursor
         - = arrow based movements
+    - . visual mode/selection mode
+        - . character wise selection
+        - . line selection
+        - . delete selection
 - . bufferize the editor
     - . multiple buffers
     - . buffer navigation

@@ -247,12 +247,15 @@ void bufferScroll(buffer *buf) {
     buf->offset.x = buf->render_x;
 }
 
-void bufferGotoEnd(buffer* buf, int mode){
-  if (buf->cursor.y < buf->row_size) {
-    buf->cursor.x = buf->rows[buf->cursor.y].size;
-    if(mode != INSERT) buf->cursor.x--;
-    buf->st.cursx = buf->cursor.x;
+void bufferGotoEnd(buffer* buf, int mode, int posflg){
+  if(posflg&JMP_BACK) buf->cursor.x=0;
+  else{
+    if (buf->cursor.y < buf->row_size) {
+      buf->cursor.x = buf->rows[buf->cursor.y].size;
+      if(mode != INSERT) buf->cursor.x--;
+    }
   }
+  buf->st.cursx = buf->cursor.x;
 }
 
 int bufferWordJump(buffer *buf, int flags){
@@ -338,6 +341,13 @@ int bufferParaNav(buffer *buf, int dirflag){
   buf->cursor.y = clamp(y, 0, buf->row_size-1);
   buf->cursor.x = dir>0?(buf->rows[buf->cursor.y].size-1):0;
   return 0;
+}
+
+void bufferReplaceChar(buffer *buf, char char_, int repx){
+  if(buf->cursor.y<0 || buf->cursor.y>=buf->row_size) return;
+  erow *row = &buf->rows[buf->cursor.y];
+  if(rowReplaceCharacter(row, char_, buf->cursor.x, repx))
+    bufferUpdateRow(buf, row);
 }
 
 void bufferPageScroll(buffer *buf, int key){

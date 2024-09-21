@@ -14,7 +14,7 @@ typedef struct {
   char statusmsg[64];
   time_t statusmsg_time;
   int mode;
-  stack cmdstk;
+  cmdstack cmdstk;
 } editorconf;
 
 // --editor init functions --
@@ -38,13 +38,15 @@ void editorInsertModeKeyProc(int key);
 void editorSwitchMode(int mode);
 void editorVisualModeKeyProc(int key);
 
-void editorGotoEnd();
 void editorPageScroll(int key);
-int editorMoveCursor(int charKey);
 void editorScroll();
-void editorGotoNextWord(int flags);
-void editorFindChar(char char_, int dirflag);
-void editorParaNav(int dirflag);
+
+int editorMoveCursor(int charKey, int repx);
+void editorGotoNextWord(int flags, int repx);
+void editorFindChar(char char_, int dirflag, int repx);
+void editorParaNav(int dirflag, int repx);
+void editorGotoEnd(int posflg, int repx);
+void editorReplaceChar(char char_, int repx);
 
 void editorInsertRow(int index, char *s, size_t len);
 void editorDeleteRow(int index);
@@ -60,3 +62,4 @@ void editorSaveBuffer();
 char *editorPrompt(char *query, void (*callback)(char*, int));
 
 void editorFind(char *prompt);
+

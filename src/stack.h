@@ -2,11 +2,18 @@
 typedef struct {
   int *vals;
   int top, _size;
-} stack;
+} cmdstack;
 
-void initStack(stack *stk);
-void freeStack(stack *stk);
-void emptyStack(stack *stk);
-int isStackEmpty(stack *stk);
-void push(stack *stk, int value);
-int pop(stack *stk);
+typedef struct {
+  int repx, cmd, arg1, arg2;
+} parsedcmd_t;
+
+void initStack(cmdstack *stk);
+void freeStack(cmdstack *stk);
+void emptyStack(cmdstack *stk);
+int isStackEmpty(cmdstack *stk);
+void push(cmdstack *stk, int value);
+int pop(cmdstack *stk);
+
+int getNumber(cmdstack *stk);
+parsedcmd_t parseCommand(cmdstack *stk);

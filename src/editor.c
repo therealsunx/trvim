@@ -74,14 +74,22 @@ void editorDrawBuffers(abuf *ab) {
 void editorShowCursor(abuf *ab) { bufferShowCursor(&editor.buf, ab); }
 
 void editorDrawStsMsgBar(abuf *ab) {
+  char cmdsts[editor.cmdstk.top];
+  for(int i=0; i<editor.cmdstk.top; i++) cmdsts[i] = editor.cmdstk.vals[i];
+
+  int psize = editor.screen_size.x-editor.cmdstk.top;
+
   abAppend(ab, "\x1b[K", 3);
   if (time(NULL) - editor.statusmsg_time < 5) {
-    int mlen = strlen(editor.statusmsg);
-    if (mlen > editor.screen_size.x)
-      mlen = editor.screen_size.x;
-    if (mlen)
-      abAppend(ab, editor.statusmsg, mlen);
+    int _slen = strlen(editor.statusmsg);
+    int mlen = clamp(_slen, 0, psize);
+    if (mlen) abAppend(ab, &editor.statusmsg[_slen-mlen], mlen);
+    psize -= mlen;
   }
+
+  for(;psize>0;psize--) abAppend(ab, " ", 1);
+
+  abAppend(ab, cmdsts, editor.cmdstk.top);
 }
 
 void editorSetStatusMsg(const char *fmt, ...) {
@@ -123,7 +131,10 @@ void editorProcessKeyPress() {
 
   switch(c){
     case HOME_KEY:
-      editor.buf.cursor.x = 0;
+      editorGotoEnd(JMP_BACK, 1);
+      break;
+    case END_KEY:
+      editorGotoEnd(0, 1);
       break;
 
     case PAGE_UP:
@@ -132,15 +143,12 @@ void editorProcessKeyPress() {
       break;
 
     default:
-      {
-        if(editor.mode == NORMAL)
-          editorNormalModeKeyProc(c);
-        else if(editor.mode == INSERT)
-          editorInsertModeKeyProc(c);
-        else if(editor.mode == VISUAL)
-          editorVisualModeKeyProc(c);
-        break;
-      }
+      if(editor.mode == NORMAL)
+        editorNormalModeKeyProc(c);
+      else if(editor.mode == INSERT)
+        editorInsertModeKeyProc(c);
+      else if(editor.mode == VISUAL)
+        editorVisualModeKeyProc(c);
   }
 }
 
@@ -157,10 +165,6 @@ void editorNormalModeKeyProc(int c) {
       exit(0);
       break;
 
-    case END_KEY:
-      editorGotoEnd();
-      break;
-
     case CTRL_A:
       editorSaveBuffer();
       break;
@@ -173,45 +177,55 @@ void editorNormalModeKeyProc(int c) {
 }
 
 void editorProcessCommand(){
-  // parse the command and take action
-  if(isStackEmpty(&editor.cmdstk)) return;
+  // parse the command
+  // if executable, then empty the stack and execute command
+  // else just return
 
-  int c = pop(&editor.cmdstk);
-
-  switch(c){
+  parsedcmd_t pc = parseCommand(&editor.cmdstk);
+  if(!pc.repx) pc.repx++;
+  // take action
+  switch(pc.cmd){
     case 'i':
       editorSwitchMode(INSERT);
       break;
-
+    case 'a':
+      editorSwitchMode(INSERT);
+      editorMoveCursor(ARROW_RIGHT, 1);
+      break;
     case '/':
       editorFind("/%s");
       break;
-
-    case '}':
-      editorParaNav(0);
+    case '0':
+      editorGotoEnd(JMP_BACK, 1);
       break;
 
+    case '$':
+      editorGotoEnd(0, pc.repx);
+      break;
+    case '}':
+      editorParaNav(0, pc.repx);
+      break;
     case '{':
-      editorParaNav(JMP_BACK);
+      editorParaNav(JMP_BACK, pc.repx);
       break;
 
     case 'w':
-      editorGotoNextWord(0);
+      editorGotoNextWord(0, pc.repx);
       break;
     case 'W':
-      editorGotoNextWord(JMP_PUNC);
+      editorGotoNextWord(JMP_PUNC, pc.repx);
       break;
     case 'e':
-      editorGotoNextWord(JMP_END);
+      editorGotoNextWord(JMP_END, pc.repx);
       break;
     case 'E':
-      editorGotoNextWord(JMP_END|JMP_PUNC);
+      editorGotoNextWord(JMP_END|JMP_PUNC, pc.repx);
       break;
     case 'b':
-      editorGotoNextWord(JMP_BACK);
+      editorGotoNextWord(JMP_BACK, pc.repx);
       break;
     case 'B':
-      editorGotoNextWord(JMP_BACK|JMP_PUNC);
+      editorGotoNextWord(JMP_BACK|JMP_PUNC, pc.repx);
       break;
 
     case 'h':
@@ -222,21 +236,32 @@ void editorProcessCommand(){
     case ARROW_RIGHT:
     case ARROW_UP:
     case ARROW_DOWN:
-      editorMoveCursor(c);
+      editorMoveCursor(pc.cmd, pc.repx);
       break;
 
-    default:
+    case 'f':
+      if(pc.arg1 == 0) return;
+      editorFindChar(pc.arg1, 0, pc.repx);
+      break;
+    case 'F':
+      if(pc.arg1 == 0) return;
+      editorFindChar(pc.arg1, JMP_BACK, pc.repx);
+      break;
+    case 'r':
+      if(pc.arg1 == 0) return;
+      if(pc.arg1 < 127) editorReplaceChar(pc.arg1, pc.repx);
+      break;
+
+    case 0:
       return;
+    default:
+      break;
   }
   emptyStack(&editor.cmdstk);
 }
 
 void editorInsertModeKeyProc(int c) {
   switch(c){
-    case END_KEY:
-      editorGotoEnd();
-      break;
-
     case RETURN:
       editorInsertNewLine();
       break;
@@ -252,7 +277,7 @@ void editorInsertModeKeyProc(int c) {
     case ARROW_RIGHT:
     case ARROW_UP:
     case ARROW_DOWN:
-      editorMoveCursor(c);
+      editorMoveCursor(c, 1);
       break;
 
     case CTRL_C:
@@ -278,23 +303,29 @@ void editorVisualModeKeyProc(int c){
   }
 }
 
-void editorGotoEnd(){bufferGotoEnd(&editor.buf, editor.mode);}
+void editorGotoEnd(int posflg, int repx){
+  bufferGotoEnd(&editor.buf, editor.mode, posflg);
+}
 
-void editorGotoNextWord(int flags){
+void editorGotoNextWord(int flags, int repx){
   bufferWordJump(&editor.buf, flags);
 }
 
-void editorFindChar(char char_, int dirflag){
+void editorFindChar(char char_, int dirflag, int repx){
   bufferFindChar(&editor.buf, char_, dirflag);
 }
 
-void editorParaNav(int dirflag){
+void editorReplaceChar(char char_, int repx){
+  bufferReplaceChar(&editor.buf, char_, repx);
+}
+
+void editorParaNav(int dirflag, int repx){
   bufferParaNav(&editor.buf, dirflag);
 }
 
 void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
 
-int editorMoveCursor(int key) { return bufferMoveCursor(&editor.buf, key, editor.mode); }
+int editorMoveCursor(int key, int repx) { return bufferMoveCursor(&editor.buf, key, editor.mode); }
 
 void editorScroll() { bufferScroll(&editor.buf); }
 

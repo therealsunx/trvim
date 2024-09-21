@@ -202,6 +202,13 @@ void rowDeleteCharacter(erow *row, int index){
   rowUpdate(row);
 }
 
+int rowReplaceCharacter(erow *row, char ch_, int start, int len){
+  len = clamp(len, 0, row->size-start);
+  if(!len) return 0;
+  memset(&row->chars[start], ch_, len);
+  return 1;
+}
+
 void rowFree(erow *row){
   free(row->chars);
   free(row->renderchars);
