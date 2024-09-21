@@ -41,7 +41,7 @@ void editorVisualModeKeyProc(int key);
 void editorPageScroll(int key);
 void editorScroll();
 
-int editorMoveCursor(int charKey, int repx);
+void editorMoveCursor(int charKey, int repx);
 void editorGotoNextWord(int flags, int repx);
 void editorFindChar(char char_, int dirflag, int repx);
 void editorParaNav(int dirflag, int repx);

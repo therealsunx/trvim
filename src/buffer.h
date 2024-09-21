@@ -30,7 +30,7 @@ void bufferDrawRows(buffer *buf, abuf *ab);
 void bufferDrawStatusBar(buffer *buf, abuf *ab);
 
 void bufferShowCursor(buffer *buf, abuf *ab);
-int bufferMoveCursor(buffer *buf, int key, int mode);
+void bufferMoveCursor(buffer *buf, int key, int mode, int repeatx);
 void bufferGotoEnd(buffer *buf, int mode, int posflg);
 void bufferScroll(buffer *buf);
 void bufferPageScroll(buffer *buf, int key);

@@ -290,11 +290,11 @@ void editorInsertModeKeyProc(int c) {
   }
 }
 
-void editorSwitchMode(int mode){ // TODO: cursor pos
+void editorSwitchMode(int mode){
   if(mode == NORMAL) editor.statusmsg_time = 0;
 
   if(editor.mode == INSERT)
-    bufferMoveCursor(&editor.buf, ARROW_LEFT, mode);
+    bufferMoveCursor(&editor.buf, ARROW_LEFT, mode, 1);
   editor.mode = mode;
 }
 
@@ -304,15 +304,17 @@ void editorVisualModeKeyProc(int c){
 }
 
 void editorGotoEnd(int posflg, int repx){
-  bufferGotoEnd(&editor.buf, editor.mode, posflg);
+  buffer *buf = &editor.buf;
+  if(!posflg) buf->cursor.y += repx-1;
+  bufferGotoEnd(buf, editor.mode, posflg);
 }
 
 void editorGotoNextWord(int flags, int repx){
-  bufferWordJump(&editor.buf, flags);
+  while(repx-- && bufferWordJump(&editor.buf, flags)){};
 }
 
 void editorFindChar(char char_, int dirflag, int repx){
-  bufferFindChar(&editor.buf, char_, dirflag);
+  while(repx-- && bufferFindChar(&editor.buf, char_, dirflag)){};
 }
 
 void editorReplaceChar(char char_, int repx){
@@ -320,12 +322,14 @@ void editorReplaceChar(char char_, int repx){
 }
 
 void editorParaNav(int dirflag, int repx){
-  bufferParaNav(&editor.buf, dirflag);
+  while(repx-- && bufferParaNav(&editor.buf, dirflag)) {};
 }
 
 void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
 
-int editorMoveCursor(int key, int repx) { return bufferMoveCursor(&editor.buf, key, editor.mode); }
+void editorMoveCursor(int key, int repx) {
+  bufferMoveCursor(&editor.buf, key, editor.mode, repx);
+}
 
 void editorScroll() { bufferScroll(&editor.buf); }
 
