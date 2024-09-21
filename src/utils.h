@@ -39,3 +39,5 @@ int vec2areSame(vec2 v1, vec2 v2);
 int isSeparator(char c);
 int isPunct(char c);
 int isNumber(char *ch);
+
+int countTabs(char *str);

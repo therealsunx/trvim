@@ -1,3 +1,6 @@
 #include "settings.h"
 
-settingsType settings = DEF_SETTINGS;
+settingsType settings = {
+  8,2,
+  REL_LINENUM|EXPAND_TABS
+};

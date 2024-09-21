@@ -16,7 +16,7 @@ editorconf editor;
 extern settingsType settings;
 
 void disableRawMode() {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
     die("tcsetattr");
 }
 
@@ -49,7 +49,7 @@ void initEditor() {
   atexit(freeEditor);
 }
 
-void freeEditor(){
+void freeEditor() {
   freeStack(&editor.cmdstk);
   freeBuffer(&editor.buf);
 }
@@ -75,19 +75,22 @@ void editorShowCursor(abuf *ab) { bufferShowCursor(&editor.buf, ab); }
 
 void editorDrawStsMsgBar(abuf *ab) {
   char cmdsts[editor.cmdstk.top];
-  for(int i=0; i<editor.cmdstk.top; i++) cmdsts[i] = editor.cmdstk.vals[i];
+  for (int i = 0; i < editor.cmdstk.top; i++)
+    cmdsts[i] = editor.cmdstk.vals[i];
 
-  int psize = editor.screen_size.x-editor.cmdstk.top;
+  int psize = editor.screen_size.x - editor.cmdstk.top;
 
   abAppend(ab, "\x1b[K", 3);
   if (time(NULL) - editor.statusmsg_time < 5) {
     int _slen = strlen(editor.statusmsg);
     int mlen = clamp(_slen, 0, psize);
-    if (mlen) abAppend(ab, &editor.statusmsg[_slen-mlen], mlen);
+    if (mlen)
+      abAppend(ab, &editor.statusmsg[_slen - mlen], mlen);
     psize -= mlen;
   }
 
-  for(;psize>0;psize--) abAppend(ab, " ", 1);
+  for (; psize > 0; psize--)
+    abAppend(ab, " ", 1);
 
   abAppend(ab, cmdsts, editor.cmdstk.top);
 }
@@ -100,11 +103,14 @@ void editorSetStatusMsg(const char *fmt, ...) {
   editor.statusmsg_time = time(NULL);
 }
 
-void editorStatusBarUpdate(){
-  if(editor.mode == NORMAL) return;
+void editorStatusBarUpdate() {
+  if (editor.mode == NORMAL)
+    return;
   editor.statusmsg_time = time(NULL);
-  if(editor.mode == INSERT) editorSetStatusMsg("-- INSERT --");
-  else if(editor.mode == VISUAL) editorSetStatusMsg("-- VISUAL --");
+  if (editor.mode == INSERT)
+    editorSetStatusMsg("-- INSERT --");
+  else if (editor.mode == VISUAL)
+    editorSetStatusMsg("-- VISUAL --");
 }
 
 void editorRefreshScreen() {
@@ -115,8 +121,10 @@ void editorRefreshScreen() {
   abAppend(&ab, "\x1b[?25l", 6); // hide cursor
   abAppend(&ab, "\x1b[H", 3);    // move cursor to start before drawing
 
-  if(editor.mode != INSERT) abAppend(&ab, "\x1b[2 q", 5);
-  else abAppend(&ab, "\x1b[6 q", 5);
+  if (editor.mode != INSERT)
+    abAppend(&ab, "\x1b[2 q", 5);
+  else
+    abAppend(&ab, "\x1b[6 q", 5);
 
   editorDrawBuffers(&ab);
   editorDrawStsMsgBar(&ab);
@@ -129,215 +137,222 @@ void editorRefreshScreen() {
 void editorProcessKeyPress() {
   int c = readKey();
 
-  switch(c){
-    case HOME_KEY:
-      editorGotoEnd(JMP_BACK, 1);
-      break;
-    case END_KEY:
-      editorGotoEnd(0, 1);
-      break;
+  switch (c) {
+  case HOME_KEY:
+    editorGotoEnd(JMP_BACK, 1);
+    break;
+  case END_KEY:
+    editorGotoEnd(0, 1);
+    break;
 
-    case PAGE_UP:
-    case PAGE_DOWN: 
-      editorPageScroll(c);
-      break;
+  case PAGE_UP:
+  case PAGE_DOWN:
+    editorPageScroll(c);
+    break;
 
-    default:
-      if(editor.mode == NORMAL)
-        editorNormalModeKeyProc(c);
-      else if(editor.mode == INSERT)
-        editorInsertModeKeyProc(c);
-      else if(editor.mode == VISUAL)
-        editorVisualModeKeyProc(c);
+  default:
+    if (editor.mode == NORMAL)
+      editorNormalModeKeyProc(c);
+    else if (editor.mode == INSERT)
+      editorInsertModeKeyProc(c);
+    else if (editor.mode == VISUAL)
+      editorVisualModeKeyProc(c);
   }
 }
 
 void editorNormalModeKeyProc(int c) {
   static int qcount = 2;
   switch (c) {
-    case CTRl_Z:
-      if (editor.buf.dirty && --qcount > 0) {
-        editorSetStatusMsg(
-            "WARNING! unchanged changes. Press CTRL-Z again to force quit");
-        return;
-      }
-      clearTerminal();
-      exit(0);
-      break;
+  case CTRl_Z:
+    if (editor.buf.dirty && --qcount > 0) {
+      editorSetStatusMsg(
+          "WARNING! unchanged changes. Press CTRL-Z again to force quit");
+      return;
+    }
+    clearTerminal();
+    exit(0);
+    break;
 
-    case CTRL_A:
-      editorSaveBuffer();
-      break;
+  case CTRL_A:
+    editorSaveBuffer();
+    break;
 
-    default:
-      push(&editor.cmdstk, c);
+  default:
+    push(&editor.cmdstk, c);
   }
   editorProcessCommand();
-  qcount=2;
+  qcount = 2;
 }
 
-void editorProcessCommand(){
+void editorProcessCommand() {
   // parse the command
   // if executable, then empty the stack and execute command
   // else just return
 
   parsedcmd_t pc = parseCommand(&editor.cmdstk);
-  if(!pc.repx) pc.repx++;
+  if (!pc.repx)
+    pc.repx++;
   // take action
-  switch(pc.cmd){
-    case 'i':
-      editorSwitchMode(INSERT);
-      break;
-    case 'a':
-      editorSwitchMode(INSERT);
-      editorMoveCursor(ARROW_RIGHT, 1);
-      break;
-    case '/':
-      editorFind("/%s");
-      break;
-    case '0':
-      editorGotoEnd(JMP_BACK, 1);
-      break;
+  switch (pc.cmd) {
+  case 'i':
+    editorSwitchMode(INSERT);
+    break;
+  case 'a':
+    editorSwitchMode(INSERT);
+    editorMoveCursor(ARROW_RIGHT, 1);
+    break;
+  case '/':
+    editorFind("/%s");
+    break;
+  case '0':
+    editorGotoEnd(JMP_BACK, 1);
+    break;
 
-    case '$':
-      editorGotoEnd(0, pc.repx);
-      break;
-    case '}':
-      editorParaNav(0, pc.repx);
-      break;
-    case '{':
-      editorParaNav(JMP_BACK, pc.repx);
-      break;
+  case '$':
+    editorGotoEnd(0, pc.repx);
+    break;
+  case '}':
+    editorParaNav(0, pc.repx);
+    break;
+  case '{':
+    editorParaNav(JMP_BACK, pc.repx);
+    break;
 
-    case 'w':
-      editorGotoNextWord(0, pc.repx);
-      break;
-    case 'W':
-      editorGotoNextWord(JMP_PUNC, pc.repx);
-      break;
-    case 'e':
-      editorGotoNextWord(JMP_END, pc.repx);
-      break;
-    case 'E':
-      editorGotoNextWord(JMP_END|JMP_PUNC, pc.repx);
-      break;
-    case 'b':
-      editorGotoNextWord(JMP_BACK, pc.repx);
-      break;
-    case 'B':
-      editorGotoNextWord(JMP_BACK|JMP_PUNC, pc.repx);
-      break;
+  case 'w':
+    editorGotoNextWord(0, pc.repx);
+    break;
+  case 'W':
+    editorGotoNextWord(JMP_PUNC, pc.repx);
+    break;
+  case 'e':
+    editorGotoNextWord(JMP_END, pc.repx);
+    break;
+  case 'E':
+    editorGotoNextWord(JMP_END | JMP_PUNC, pc.repx);
+    break;
+  case 'b':
+    editorGotoNextWord(JMP_BACK, pc.repx);
+    break;
+  case 'B':
+    editorGotoNextWord(JMP_BACK | JMP_PUNC, pc.repx);
+    break;
 
-    case 'h':
-    case 'j':
-    case 'k':
-    case 'l':
-    case ARROW_LEFT:
-    case ARROW_RIGHT:
-    case ARROW_UP:
-    case ARROW_DOWN:
-      editorMoveCursor(pc.cmd, pc.repx);
-      break;
+  case 'h':
+  case 'j':
+  case 'k':
+  case 'l':
+  case ARROW_LEFT:
+  case ARROW_RIGHT:
+  case ARROW_UP:
+  case ARROW_DOWN:
+    editorMoveCursor(pc.cmd, pc.repx);
+    break;
 
-    case 'H':
-      editorAbsoluteJump(pc.repx);
-      break;
+  case 'J':
+    editorAbsoluteJump(pc.repx);
+    break;
 
-    case 'f':
-      if(pc.arg1 == 0) return;
-      editorFindChar(pc.arg1, 0, pc.repx);
-      break;
-    case 'F':
-      if(pc.arg1 == 0) return;
-      editorFindChar(pc.arg1, JMP_BACK, pc.repx);
-      break;
-    case 'r':
-      if(pc.arg1 == 0) return;
-      if(pc.arg1 < 127) editorReplaceChar(pc.arg1, pc.repx);
-      break;
-
-    case 0:
+  case 'f':
+    if (pc.arg1 == 0)
       return;
-    default:
-      break;
+    editorFindChar(pc.arg1, 0, pc.repx);
+    break;
+  case 'F':
+    if (pc.arg1 == 0)
+      return;
+    editorFindChar(pc.arg1, JMP_BACK, pc.repx);
+    break;
+  case 'r':
+    if (pc.arg1 == 0)
+      return;
+    if (pc.arg1 < 127)
+      editorReplaceChar(pc.arg1, pc.repx);
+    break;
+
+  case 0:
+    return;
+  default:
+    break;
   }
   emptyStack(&editor.cmdstk);
 }
 
 void editorInsertModeKeyProc(int c) {
-  switch(c){
-    case RETURN:
-      editorInsertNewLine();
-      break;
-    case BACKSPACE:
-    case CTRL_H:
-      editorDelChar(-1);
-      break;
-    case DEL_KEY:
-      editorDelChar(0);
-      break;
+  switch (c) {
+  case RETURN:
+    editorInsertNewLine();
+    break;
+  case BACKSPACE:
+  case CTRL_H:
+    editorDelChar(-1);
+    break;
+  case DEL_KEY:
+    editorDelChar(0);
+    break;
 
-    case ARROW_LEFT:
-    case ARROW_RIGHT:
-    case ARROW_UP:
-    case ARROW_DOWN:
-      editorMoveCursor(c, 1);
-      break;
+  case ARROW_LEFT:
+  case ARROW_RIGHT:
+  case ARROW_UP:
+  case ARROW_DOWN:
+    editorMoveCursor(c, 1);
+    break;
 
-    case CTRL_C:
-    case ESCAPE:
-      editorSwitchMode(NORMAL);
-      break;
-    default:
-      editorInsertChar(c);
-      break;
+  case CTRL_C:
+  case ESCAPE:
+    editorSwitchMode(NORMAL);
+    break;
+  default:
+    editorInsertChar(c);
+    break;
   }
 }
 
-void editorSwitchMode(int mode){
-  if(mode == NORMAL) editor.statusmsg_time = 0;
+void editorSwitchMode(int mode) {
+  if (mode == NORMAL)
+    editor.statusmsg_time = 0;
 
-  if(editor.mode == INSERT)
+  if (editor.mode == INSERT)
     bufferMoveCursor(&editor.buf, ARROW_LEFT, mode, 1);
   editor.mode = mode;
 }
 
-void editorVisualModeKeyProc(int c){
-  switch(c){
-  }
+void editorVisualModeKeyProc(int c) {
+  switch (c) {}
 }
 
-void editorGotoEnd(int posflg, int repx){
+void editorGotoEnd(int posflg, int repx) {
   buffer *buf = &editor.buf;
-  if(!posflg) buf->cursor.y += repx-1;
+  if (!posflg)
+    buf->cursor.y += repx - 1;
   bufferGotoEnd(buf, editor.mode, posflg);
 }
 
-void editorGotoNextWord(int flags, int repx){
-  while(repx-- && bufferWordJump(&editor.buf, flags)){};
+void editorGotoNextWord(int flags, int repx) {
+  while (repx-- && bufferWordJump(&editor.buf, flags)) {
+  };
 }
 
-void editorFindChar(char char_, int dirflag, int repx){
-  while(repx-- && bufferFindChar(&editor.buf, char_, dirflag)){};
+void editorFindChar(char char_, int dirflag, int repx) {
+  while (repx-- && bufferFindChar(&editor.buf, char_, dirflag)) {
+  };
 }
 
-void editorReplaceChar(char char_, int repx){
+void editorReplaceChar(char char_, int repx) {
   bufferReplaceChar(&editor.buf, char_, repx);
 }
 
-void editorParaNav(int dirflag, int repx){
-  while(repx-- && bufferParaNav(&editor.buf, dirflag)) {};
+void editorParaNav(int dirflag, int repx) {
+  while (repx-- && bufferParaNav(&editor.buf, dirflag)) {
+  };
 }
 
-void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
+void editorPageScroll(int key) { bufferPageScroll(&editor.buf, key); }
 
 void editorMoveCursor(int key, int repx) {
   bufferMoveCursor(&editor.buf, key, editor.mode, repx);
 }
 
-void editorAbsoluteJump(int line){
-  bufferAbsoluteJump(&editor.buf, line);
-}
+void editorAbsoluteJump(int line) { bufferAbsoluteJump(&editor.buf, line); }
 
 void editorScroll() { bufferScroll(&editor.buf); }
 
@@ -449,7 +464,8 @@ void editorFind(char *prompt) {
   vec2 _st_cur = editor.buf.cursor;
   vec2 _st_off = editor.buf.offset;
 
-  char *query = editorPrompt(prompt? prompt: "Search: %s (Esc to cancel)", editorFindCallback);
+  char *query = editorPrompt(prompt ? prompt : "Search: %s (Esc to cancel)",
+                             editorFindCallback);
   if (query) {
     if (editor.buf.st.query)
       free(editor.buf.st.query);

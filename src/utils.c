@@ -6,6 +6,9 @@
 #include <stdio.h>
 
 #include "utils.h"
+#include "settings.h"
+
+extern settingsType settings;
 
 int getWindowSize(int *rows, int *cols) {
   struct winsize ws;
@@ -82,4 +85,8 @@ int isNumber(char *ch){
     if(!isdigit(ch[i])) return 0;
   }
   return 1;
+}
+
+int countTabs(char *str){
+  return 0;
 }

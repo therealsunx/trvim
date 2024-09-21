@@ -51,7 +51,7 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - = paragraph navigation
             - = { : previous paragraph end
             - = } : next paragraph end
-        - = absolute line jumps : {n}H : jump to line 'n'
+        - = absolute line jumps : {n}J : jump to line 'n'
         - = movement keybinds
             - h : left
             - j : down

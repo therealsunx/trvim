@@ -1,7 +1,11 @@
 #pragma once
 
-#define DEF_SETTINGS {4, 4, 1}
+enum settingsflags {
+  REL_LINENUM = 0x1,
+  EXPAND_TABS = 0x2,
+};
 
 typedef struct {
-  int scrollpadding, tabwidth, relativelinenum;
+  int scrollpadding, tabwidth;
+  int flags;
 } settingsType;
