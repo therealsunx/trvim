@@ -239,6 +239,10 @@ void editorProcessCommand(){
       editorMoveCursor(pc.cmd, pc.repx);
       break;
 
+    case 'H':
+      editorAbsoluteJump(pc.repx);
+      break;
+
     case 'f':
       if(pc.arg1 == 0) return;
       editorFindChar(pc.arg1, 0, pc.repx);
@@ -329,6 +333,10 @@ void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
 
 void editorMoveCursor(int key, int repx) {
   bufferMoveCursor(&editor.buf, key, editor.mode, repx);
+}
+
+void editorAbsoluteJump(int line){
+  bufferAbsoluteJump(&editor.buf, line);
 }
 
 void editorScroll() { bufferScroll(&editor.buf); }

@@ -35,13 +35,12 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
 - . vim operation modes
     - . normal mode
         - = command parsing
-        - . number+command:replication
-        - . absolute and relative line jumps
-        - = movement keybinds (h,j,k,l)
         - = '/' key find string
         - = f : find character after cursor
         - = F : find character before cursor
-        - . r : replace character with next one
+        - = r : replace character with next one
+        - = $ : go to end of line
+        - = 0 : go to start of line
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)
@@ -52,6 +51,22 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - = paragraph navigation
             - = { : previous paragraph end
             - = } : next paragraph end
+        - = absolute line jumps : {n}H : jump to line 'n'
+        - = movement keybinds
+            - h : left
+            - j : down
+            - k : up
+            - l : right
+        - = relative jumps
+            - {n}(h|j|k|l) = n times (h|j|k|l)
+            - e.g. 12j = jump down 12 lines
+        - = command replication
+            - type some number and then command to replicate it
+            - e.g. relative jumps (as described above)
+            - e.g. {n}w go to nth next word : 3w = go to 3rd word next to cursor 
+            - e.g. {n}f{char} goes to nth next {char} character in current line
+                - 3fc : go to 3rd 'c' away from cursor
+            - e.g. {n}$ go to end of nth line below cursor
     - . insert mode
         - . auto indentation
         - = cursor range increase

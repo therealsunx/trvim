@@ -213,6 +213,13 @@ void bufferMoveCursor(buffer *buf, int key, int mode, int repx) {
   }
 }
 
+void bufferAbsoluteJump(buffer *buf, int line){
+  line--;
+  if(line<0 || line>=buf->row_size) return;
+  buf->cursor.y = line;
+  buf->cursor.x = clamp(buf->st.cursx, 0, buf->rows[buf->cursor.y].size-1);
+}
+
 void bufferScroll(buffer *buf) {
   int _cy = buf->cursor.y - buf->offset.y;
 
