@@ -325,6 +325,21 @@ int bufferFindChar(buffer *buf, char char_, int dirflg){
   return 0;
 }
 
+int bufferParaNav(buffer *buf, int dirflag){
+  int dir = dirflag&JMP_BACK?-1:1;
+  int y=buf->cursor.y+dir;
+  for(; y>0 && y<buf->row_size;y+=dir){
+    if(buf->rows[y].size == 0){
+      buf->cursor.x=0;
+      buf->cursor.y=y;
+      return 1;
+    }
+  }
+  buf->cursor.y = clamp(y, 0, buf->row_size-1);
+  buf->cursor.x = dir>0?(buf->rows[buf->cursor.y].size-1):0;
+  return 0;
+}
+
 void bufferPageScroll(buffer *buf, int key){
   if (key == PAGE_UP)
     buf->cursor.y = buf->offset.y + settings.scrollpadding;

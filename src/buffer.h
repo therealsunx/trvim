@@ -36,6 +36,7 @@ void bufferScroll(buffer *buf);
 void bufferPageScroll(buffer *buf, int key);
 int bufferWordJump(buffer *buf, int flags);
 int bufferFindChar(buffer *buf, char char_, int dirflg);
+int bufferParaNav(buffer *buf, int dirflag);
 
 void bufferUpdateRow(buffer *buf, erow *row);
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len);

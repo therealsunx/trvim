@@ -178,21 +178,6 @@ void editorProcessCommand(){
 
   int c = pop(&editor.cmdstk);
 
-  int pc = 0;
-  if(!isStackEmpty(&editor.cmdstk)){
-    pc = pop(&editor.cmdstk);
-  }
-
-  if(pc == 'f'){
-    editorFindChar(c, 0);
-    emptyStack(&editor.cmdstk);
-    return;
-  } else if(pc == 'F'){
-    editorFindChar(c, JMP_BACK);
-    emptyStack(&editor.cmdstk);
-    return;
-  }
-
   switch(c){
     case 'i':
       editorSwitchMode(INSERT);
@@ -200,6 +185,14 @@ void editorProcessCommand(){
 
     case '/':
       editorFind("/%s");
+      break;
+
+    case '}':
+      editorParaNav(0);
+      break;
+
+    case '{':
+      editorParaNav(JMP_BACK);
       break;
 
     case 'w':
@@ -293,6 +286,10 @@ void editorGotoNextWord(int flags){
 
 void editorFindChar(char char_, int dirflag){
   bufferFindChar(&editor.buf, char_, dirflag);
+}
+
+void editorParaNav(int dirflag){
+  bufferParaNav(&editor.buf, dirflag);
 }
 
 void editorPageScroll(int key){ bufferPageScroll(&editor.buf, key); }
