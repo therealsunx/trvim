@@ -134,29 +134,37 @@ void editorRefreshScreen() {
   abFree(&ab);
 }
 
+buffer *editorGetCurrentBuffer(){
+  // TODO : get buffer from list of active buffers
+  // when multiple buffers are supported
+  return &editor.buf;
+}
+
 void editorProcessKeyPress() {
   int c = readKey();
 
+  buffer *buf = editorGetCurrentBuffer();
+
   switch (c) {
-  case HOME_KEY:
-    editorGotoEnd(JMP_BACK, 1);
-    break;
-  case END_KEY:
-    editorGotoEnd(0, 1);
-    break;
+    case HOME_KEY:
+      bufferGotoEnd(buf, editor.mode, JMP_BACK);
+      break;
+    case END_KEY:
+      bufferGotoEnd(buf, editor.mode, 0);
+      break;
 
-  case PAGE_UP:
-  case PAGE_DOWN:
-    editorPageScroll(c);
-    break;
+    case PAGE_UP:
+    case PAGE_DOWN:
+      bufferPageScroll(buf, c);
+      break;
 
-  default:
-    if (editor.mode == NORMAL)
-      editorNormalModeKeyProc(c);
-    else if (editor.mode == INSERT)
-      editorInsertModeKeyProc(c);
-    else if (editor.mode == VISUAL)
-      editorVisualModeKeyProc(c);
+    default:
+      if (editor.mode == NORMAL)
+        editorNormalModeKeyProc(c);
+      else if (editor.mode == INSERT)
+        editorInsertModeKeyProc(c);
+      else if (editor.mode == VISUAL)
+        editorVisualModeKeyProc(c);
   }
 }
 
@@ -185,56 +193,55 @@ void editorNormalModeKeyProc(int c) {
 }
 
 void editorProcessCommand() {
-  // parse the command
-  // if executable, then empty the stack and execute command
-  // else just return
-
   parsedcmd_t pc = parseCommand(&editor.cmdstk);
   if (!pc.repx)
     pc.repx++;
   // take action
+
+  buffer *buf = editorGetCurrentBuffer();
+
   switch (pc.cmd) {
   case 'i':
     editorSwitchMode(INSERT);
     break;
   case 'a':
     editorSwitchMode(INSERT);
-    editorMoveCursor(ARROW_RIGHT, 1);
+    bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
     break;
   case '/':
     editorFind("/%s");
     break;
   case '0':
-    editorGotoEnd(JMP_BACK, 1);
+    bufferGotoEnd(buf, editor.mode, JMP_BACK);
     break;
 
   case '$':
-    editorGotoEnd(0, pc.repx);
+    buf->cursor.y += pc.repx-1;
+    bufferGotoEnd(buf, editor.mode, 0);
     break;
   case '}':
-    editorParaNav(0, pc.repx);
+    while(pc.repx-- && bufferParaNav(buf, 0)){}
     break;
   case '{':
-    editorParaNav(JMP_BACK, pc.repx);
+    while(pc.repx-- && bufferParaNav(buf, JMP_BACK)){}
     break;
-
   case 'w':
-    editorGotoNextWord(0, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, 0)){}
     break;
   case 'W':
-    editorGotoNextWord(JMP_PUNC, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, JMP_PUNC)){}
     break;
   case 'e':
-    editorGotoNextWord(JMP_END, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, JMP_END)){}
     break;
   case 'E':
-    editorGotoNextWord(JMP_END | JMP_PUNC, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, JMP_END | JMP_PUNC)){}
     break;
   case 'b':
-    editorGotoNextWord(JMP_BACK, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, JMP_BACK)){}
     break;
   case 'B':
-    editorGotoNextWord(JMP_BACK | JMP_PUNC, pc.repx);
+    while(pc.repx-- && bufferWordJump(buf, JMP_BACK | JMP_PUNC)){}
     break;
 
   case 'h':
@@ -245,28 +252,32 @@ void editorProcessCommand() {
   case ARROW_RIGHT:
   case ARROW_UP:
   case ARROW_DOWN:
-    editorMoveCursor(pc.cmd, pc.repx);
+    bufferMoveCursor(buf, pc.cmd, editor.mode, pc.repx);
     break;
 
   case 'J':
-    editorAbsoluteJump(pc.repx);
+    bufferAbsoluteJump(buf, pc.repx);
+    break;
+  case 'H':
+    buf->cursor.y = buf->offset.y+settings.scrollpadding;
+    if(buf->cursor.y >= buf->row_size) buf->cursor.y = buf->row_size-1;
+    break;
+  case 'L':
+    buf->cursor.y = buf->offset.y+buf->size.y-1-settings.scrollpadding;
+    if(buf->cursor.y >= buf->row_size) buf->cursor.y = buf->row_size-1;
     break;
 
   case 'f':
-    if (pc.arg1 == 0)
-      return;
-    editorFindChar(pc.arg1, 0, pc.repx);
+    if (pc.arg1 == 0) return;
+    while(pc.repx-- && bufferFindChar(buf, pc.arg1, 0)){}
     break;
   case 'F':
-    if (pc.arg1 == 0)
-      return;
-    editorFindChar(pc.arg1, JMP_BACK, pc.repx);
+    if (pc.arg1 == 0) return;
+    while(pc.repx-- && bufferFindChar(buf, pc.arg1, JMP_BACK)){}
     break;
   case 'r':
-    if (pc.arg1 == 0)
-      return;
-    if (pc.arg1 < 127)
-      editorReplaceChar(pc.arg1, pc.repx);
+    if (pc.arg1 == 0) return;
+    if (pc.arg1 < 127) bufferReplaceChar(buf, pc.arg1, pc.repx);
     break;
 
   case 0:
@@ -278,32 +289,33 @@ void editorProcessCommand() {
 }
 
 void editorInsertModeKeyProc(int c) {
+  buffer *buf = editorGetCurrentBuffer();
   switch (c) {
-  case RETURN:
-    editorInsertNewLine();
-    break;
-  case BACKSPACE:
-  case CTRL_H:
-    editorDelChar(-1);
-    break;
-  case DEL_KEY:
-    editorDelChar(0);
-    break;
+    case RETURN:
+      bufferInsertNewLine(buf);
+      break;
+    case BACKSPACE:
+    case CTRL_H:
+      bufferDelChar(buf, -1);
+      break;
+    case DEL_KEY:
+      bufferDelChar(buf, 0);
+      break;
 
-  case ARROW_LEFT:
-  case ARROW_RIGHT:
-  case ARROW_UP:
-  case ARROW_DOWN:
-    editorMoveCursor(c, 1);
-    break;
+    case ARROW_LEFT:
+    case ARROW_RIGHT:
+    case ARROW_UP:
+    case ARROW_DOWN:
+      bufferMoveCursor(buf, c, editor.mode, 1);
+      break;
 
-  case CTRL_C:
-  case ESCAPE:
-    editorSwitchMode(NORMAL);
-    break;
-  default:
-    editorInsertChar(c);
-    break;
+    case CTRL_C:
+    case ESCAPE:
+      editorSwitchMode(NORMAL);
+      break;
+    default:
+      bufferInsertChar(buf, c);
+      break;
   }
 }
 
@@ -320,55 +332,9 @@ void editorVisualModeKeyProc(int c) {
   switch (c) {}
 }
 
-void editorGotoEnd(int posflg, int repx) {
-  buffer *buf = &editor.buf;
-  if (!posflg)
-    buf->cursor.y += repx - 1;
-  bufferGotoEnd(buf, editor.mode, posflg);
-}
-
-void editorGotoNextWord(int flags, int repx) {
-  while (repx-- && bufferWordJump(&editor.buf, flags)) {
-  };
-}
-
-void editorFindChar(char char_, int dirflag, int repx) {
-  while (repx-- && bufferFindChar(&editor.buf, char_, dirflag)) {
-  };
-}
-
-void editorReplaceChar(char char_, int repx) {
-  bufferReplaceChar(&editor.buf, char_, repx);
-}
-
-void editorParaNav(int dirflag, int repx) {
-  while (repx-- && bufferParaNav(&editor.buf, dirflag)) {
-  };
-}
-
-void editorPageScroll(int key) { bufferPageScroll(&editor.buf, key); }
-
-void editorMoveCursor(int key, int repx) {
-  bufferMoveCursor(&editor.buf, key, editor.mode, repx);
-}
-
-void editorAbsoluteJump(int line) { bufferAbsoluteJump(&editor.buf, line); }
-
-void editorScroll() { bufferScroll(&editor.buf); }
-
-void editorInsertRow(int index, char *s, size_t len) {
-  bufferInsertRow(&editor.buf, index, s, len);
-}
-
-void editorDeleteRow(int index) { bufferDeleteRow(&editor.buf, index); }
+void editorScroll() { bufferScroll(editorGetCurrentBuffer()); }
 
 void editorOpen(char *filename) { bufferOpenFile(&editor.buf, filename); }
-
-void editorInsertChar(int ch) { bufferInsertChar(&editor.buf, ch); }
-
-void editorInsertNewLine() { bufferInsertNewLine(&editor.buf); }
-
-void editorDelChar(int dir) { bufferDelChar(&editor.buf, dir); }
 
 void editorSaveBuffer() {
   if (editor.buf.filename == NULL) {

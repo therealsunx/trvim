@@ -41,6 +41,14 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
         - = r : replace character with next one
         - = $ : go to end of line
         - = 0 : go to start of line
+        - . : : internal command prompt
+            - . :{n} : go to line number n
+            - . :w : save the current buffer into the file
+            - . :wa : save all buffers into the file
+            - . :q : quit current buffer
+            - . :qa : quit all buffers
+            - . :wq : save and quit current buffer
+            - . :wqa : save and quit all buffers
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)
@@ -52,6 +60,9 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
             - = { : previous paragraph end
             - = } : next paragraph end
         - = absolute line jumps : {n}J : jump to line 'n'
+        - = quick page navigation : fast cursor jumps for efficient work
+            - = H : move cursor towards beginning of visible page
+            - = L : move cursor towards end of visible page
         - = movement keybinds
             - h : left
             - j : down

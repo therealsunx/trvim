@@ -70,21 +70,6 @@ void addWelcomeMsg(buffer *buf, abuf *ab) {
   abAppend(ab, wlc, wlclen);
 }
 
-void addColumn_(buffer *buf, abuf *ab, int linenum) {
-  char _lstr[48];
-  int val = linenum + 1, len;
-  if(settings.flags&REL_LINENUM && linenum!=buf->cursor.y){
-    val -= buf->cursor.y+1;
-    if(val<0) val=-val;
-    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
-  }else{
-    len = linenum < buf->row_size
-      ? snprintf(_lstr, sizeof(_lstr), "\x1b[33m%-*d\x1b[0m ", buf->linenumcol_sz - 1, val)
-      : snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
-  }
-  abAppend(ab, _lstr, len);
-}
-
 void addColumn(buffer *buf, abuf *ab, int linenum){
   char _lstr[48];
   int val = linenum+1, len;
@@ -453,20 +438,20 @@ void bufferInsertNewLine(buffer *buf) {
     buf->cursor.x = 0;
   } else {
     erow *row = &buf->rows[buf->cursor.y];
-    bufferInsertRow(buf, ++buf->cursor.y, &row->chars[buf->cursor.x],
+    bufferInsertRow(buf, buf->cursor.y+1, &row->chars[buf->cursor.x],
                     row->size - buf->cursor.x);
-    //row = &buf->rows[buf->cursor.y];
+    row = &buf->rows[buf->cursor.y];
     row->size = buf->cursor.x;
     row->chars[row->size] = '\0';
     bufferUpdateRow(buf, row);
 
+    buf->cursor.y++;
     int _tcount = countTabs(row->chars);
     row = &buf->rows[buf->cursor.y];
     buf->cursor.x = 0;
     while(_tcount--) bufferInsertChar(buf, '\t');
     bufferUpdateRow(buf, row);
   }
-
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
 }
