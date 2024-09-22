@@ -70,17 +70,33 @@ void addWelcomeMsg(buffer *buf, abuf *ab) {
   abAppend(ab, wlc, wlclen);
 }
 
-void addColumn(buffer *buf, abuf *ab, int linenum) {
-  char _lstr[32];
+void addColumn_(buffer *buf, abuf *ab, int linenum) {
+  char _lstr[48];
   int val = linenum + 1, len;
-  if(settings.flags&REL_LINENUM && linenum != buf->cursor.y){
+  if(settings.flags&REL_LINENUM && linenum!=buf->cursor.y){
     val -= buf->cursor.y+1;
     if(val<0) val=-val;
     len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
   }else{
-    len = val <= buf->row_size
+    len = linenum < buf->row_size
       ? snprintf(_lstr, sizeof(_lstr), "\x1b[33m%-*d\x1b[0m ", buf->linenumcol_sz - 1, val)
       : snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
+  }
+  abAppend(ab, _lstr, len);
+}
+
+void addColumn(buffer *buf, abuf *ab, int linenum){
+  char _lstr[48];
+  int val = linenum+1, len;
+
+  if(linenum < buf->row_size){
+    if(settings.flags&REL_LINENUM && linenum!=buf->cursor.y){
+      val -= buf->cursor.y+1;
+      if(val<0) val=-val;
+    }
+    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
+  } else {
+    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
   }
   abAppend(ab, _lstr, len);
 }
@@ -433,7 +449,7 @@ void bufferInsertChar(buffer *buf, int ch) {
 
 void bufferInsertNewLine(buffer *buf) {
   if (buf->cursor.x == 0){
-    bufferInsertRow(buf, buf->cursor.y, "", 0);
+    bufferInsertRow(buf, buf->cursor.y++, "", 0);
     buf->cursor.x = 0;
   } else {
     erow *row = &buf->rows[buf->cursor.y];
@@ -444,8 +460,11 @@ void bufferInsertNewLine(buffer *buf) {
     row->chars[row->size] = '\0';
     bufferUpdateRow(buf, row);
 
+    int _tcount = countTabs(row->chars);
     row = &buf->rows[buf->cursor.y];
     buf->cursor.x = 0;
+    while(_tcount--) bufferInsertChar(buf, '\t');
+    bufferUpdateRow(buf, row);
   }
 
   buf->st.cursx = buf->cursor.x;

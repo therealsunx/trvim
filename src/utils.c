@@ -88,5 +88,11 @@ int isNumber(char *ch){
 }
 
 int countTabs(char *str){
-  return 0;
+  int _count = 0, _sz=strlen(str);
+  for(int i=0; i<_sz; i++){
+    if(str[i]==' ') _count++;
+    else if(str[i] == '\t') _count+=settings.tabwidth;
+    else break;
+  }
+  return _count/settings.tabwidth;
 }

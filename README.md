@@ -67,8 +67,8 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
             - e.g. {n}f{char} goes to nth next {char} character in current line
                 - 3fc : go to 3rd 'c' away from cursor
             - e.g. {n}$ go to end of nth line below cursor
-    - . insert mode
-        - . auto indentation
+    - = insert mode
+        - = auto indentation
         - = cursor range increase
         - = thin cursor
         - = arrow based movements
