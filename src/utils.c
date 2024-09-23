@@ -10,18 +10,26 @@
 
 extern settingsType settings;
 
-int getWindowSize(int *rows, int *cols) {
-  struct winsize ws;
+int getWindowSize_(int *rows, int *cols) {
+  static struct winsize ws;
 
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
     if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
       return -1;
     return getCursorPosition(rows, cols);
-  } else {
-    *cols = ws.ws_col;
-    *rows = ws.ws_row;
-    return 0;
   }
+  *cols = ws.ws_col;
+  *rows = ws.ws_row;
+  return 0;
+}
+
+int getWindowSize(int *rows, int *cols){
+  static struct winsize ws;
+
+  if( ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) return -1;
+  *rows = ws.ws_row;
+  *cols = ws.ws_col;
+  return 0;
 }
 
 int getCursorPosition(int *rows, int *cols) {
@@ -31,10 +39,8 @@ int getCursorPosition(int *rows, int *cols) {
     return -1;
 
   while (i < sizeof(buf) - 1) {
-    if (read(STDIN_FILENO, &buf[i], 1) != 1)
-      break;
-    if (buf[i] == 'R')
-      break;
+    if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
+    if (buf[i] == 'R') break;
     i++;
   }
   buf[i] = '\0';

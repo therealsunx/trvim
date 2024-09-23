@@ -45,7 +45,7 @@ void initEditor() {
   editor.mode = NORMAL;
   initStack(&editor.cmdstk);
 
-  editorUpdateSize();
+  editorCheckSizeUpdate();
   atexit(freeEditor);
 }
 
@@ -54,16 +54,16 @@ void freeEditor() {
   freeBuffer(&editor.buf);
 }
 
-void editorUpdateSize() {
+int editorCheckSizeUpdate() {
   vec2 _sz;
   if (getWindowSize(&_sz.y, &_sz.x) == -1)
     die("invalid window size");
 
-  if (_sz.x == editor.screen_size.x && _sz.y == editor.screen_size.y)
-    return;
+  if (_sz.x == editor.screen_size.x && _sz.y == editor.screen_size.y) return 0;
   editor.screen_size.x = _sz.x;
   editor.screen_size.y = _sz.y;
   bufferUpdateSize(&editor.buf, editor.screen_size.x, editor.screen_size.y - 2);
+  return 1;
 }
 
 void editorDrawBuffers(abuf *ab) {
@@ -72,6 +72,7 @@ void editorDrawBuffers(abuf *ab) {
 }
 
 void editorShowCursor(abuf *ab) { bufferShowCursor(&editor.buf, ab); }
+int editorReadKey();
 
 void editorDrawStsMsgBar(abuf *ab) {
   char cmdsts[editor.cmdstk.top];
@@ -114,7 +115,7 @@ void editorStatusBarUpdate() {
 }
 
 void editorRefreshScreen() {
-  editorUpdateSize();
+  editorStatusBarUpdate();
   editorScroll();
   abuf ab = ABUF_INIT;
 
@@ -140,8 +141,16 @@ buffer *editorGetCurrentBuffer(){
   return &editor.buf;
 }
 
+void _editorSzUpdtcb(){
+  if(editorCheckSizeUpdate()) editorRefreshScreen();
+}
+
+int editorReadKey(){
+  return readKey(_editorSzUpdtcb);
+}
+
 void editorProcessKeyPress() {
-  int c = readKey();
+  int c = editorReadKey();
 
   buffer *buf = editorGetCurrentBuffer();
 
@@ -209,6 +218,7 @@ void editorProcessCommand() {
     bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
     break;
   case '/':
+    emptyStack(&editor.cmdstk);
     editorFind("/%s");
     break;
   case '0':
@@ -338,6 +348,7 @@ void editorOpen(char *filename) { bufferOpenFile(&editor.buf, filename); }
 
 void editorSaveBuffer() {
   if (editor.buf.filename == NULL) {
+    editorStatusBarUpdate();
     if ((editor.buf.filename = editorPrompt("Save as: %s", NULL)) == NULL) {
       editorSetStatusMsg("Save Aborted...");
       return;
@@ -361,7 +372,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
     editorSetStatusMsg(prompt, buf);
     editorRefreshScreen();
 
-    int c = readKey();
+    int c = editorReadKey();
 
     if (c == ESCAPE) {
       editorSetStatusMsg("");

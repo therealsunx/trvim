@@ -6,10 +6,11 @@
 #include "utils.h"
 #include "input.h"
 
-int readKey() {
+int readKey(void (*callback)()) {
   int nread;
   char c;
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+    callback();
     if (nread == -1 && errno != EAGAIN)
       die("reading input failed");
   }

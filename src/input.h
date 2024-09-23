@@ -1,3 +1,3 @@
 #pragma once
 
-int readKey();
+int readKey(void (*callback)(void*));

@@ -24,7 +24,7 @@ void initEditor();
 void freeEditor();
 
 // -- editor prcs --
-void editorUpdateSize();
+int editorCheckSizeUpdate();
 void editorDrawBuffers(abuf *appendbuffer);
 void editorShowCursor(abuf *ab);
 void editorDrawStsMsgBar(abuf *ab);
@@ -33,6 +33,7 @@ void editorStatusBarUpdate();
 buffer *editorGetCurrentBuffer();
 
 void editorRefreshScreen();
+int editorReadKey();
 void editorProcessKeyPress();
 void editorNormalModeKeyProc(int key);
 void editorInsertModeKeyProc(int key);

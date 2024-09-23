@@ -5,8 +5,8 @@ I am attempting to make a text editor, that is similar in use as vim. Let's see 
 A comprehensive text editor with syntax highlighting and few autocompletions for general text editing.
 
 ## Features
-- _completed features are marked with =
-- _undergoing features are marked with .
+_completed features are marked with =
+_undergoing features are marked with .
 
 - = movement
 - = editing
@@ -29,9 +29,9 @@ A comprehensive text editor with syntax highlighting and few autocompletions for
     - = 8bit colors instead of 4 bits
     - = default highlights in any type
 - = absolute and relative line number
-- . status msg bar
+- = status msg bar
     - = mode indicator
-    - . command buffer
+    - = command buffer
 - . vim operation modes
     - . normal mode
         - = command parsing

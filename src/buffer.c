@@ -79,7 +79,9 @@ void addColumn(buffer *buf, abuf *ab, int linenum){
       val -= buf->cursor.y+1;
       if(val<0) val=-val;
     }
-    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
+    len = linenum==buf->cursor.y ?
+      snprintf(_lstr, sizeof(_lstr), "\x1b[90m\x1b[33m%-*d\x1b[0m ", buf->linenumcol_sz - 1, val):
+      snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
   } else {
     len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
   }
@@ -216,8 +218,7 @@ void bufferMoveCursor(buffer *buf, int key, int mode, int repx) {
 
 void bufferAbsoluteJump(buffer *buf, int line){
   line--;
-  if(line<0 || line>=buf->row_size) return;
-  buf->cursor.y = line;
+  buf->cursor.y = clamp(line, 0, buf->row_size-1);
   buf->cursor.x = clamp(buf->st.cursx, 0, buf->rows[buf->cursor.y].size-1);
 }
 

@@ -9,7 +9,6 @@ int main(int argc, char* argv[]) { // test comment
 
   editorSetStatusMsg("Help: Ctrl-Z=quit | CTRL-S=Save");
   while (1) {
-    editorStatusBarUpdate();
     editorRefreshScreen();
     editorProcessKeyPress();
   }
