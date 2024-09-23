@@ -5,7 +5,7 @@
 #include "keybinds.h"
 #include "abuf.h"
 #include "buffer.h"
-#include "stack.h"
+#include "cmdstack.h"
 
 typedef struct {
   buffer buf;
@@ -46,9 +46,11 @@ void editorScroll();
 void editorOpen(char* filename);
 
 void editorProcessCommand();
+void editorCmdPromptProc(char *prompt);
+void editorSaveQuitBuffers(int flags);
 
 // -- editor operations --
-void editorSaveBuffer();
+void editorSaveBuffer(buffer *buf);
 char *editorPrompt(char *query, void (*callback)(char*, int));
 
 void editorFind(char *prompt);

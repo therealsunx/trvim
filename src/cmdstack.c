@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "stack.h"
+#include "cmdstack.h"
 #include "utils.h"
 
 void initStack(cmdstack *stk){

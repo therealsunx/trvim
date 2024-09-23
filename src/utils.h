@@ -28,6 +28,16 @@ enum JUMP_FLAGS {
   JMP_PUNC = 0x4,
 };
 
+enum CMD_TYPES {
+  CMD_NONE = 0x0,
+  CMD_NUM = 0x1,
+  CMD_WRITE = 0x2,
+  CMD_QUIT = 0x4,
+  CMD_ALL = 0x8,
+  CMD_FORCE = 0x10,
+  CMD_ERROR = 0x20,
+};
+
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
 void clearTerminal();

@@ -41,14 +41,16 @@ _undergoing features are marked with .
         - = r : replace character with next one
         - = $ : go to end of line
         - = 0 : go to start of line
-        - . : : internal command prompt
-            - . :{n} : go to line number n
-            - . :w : save the current buffer into the file
-            - . :wa : save all buffers into the file
-            - . :q : quit current buffer
-            - . :qa : quit all buffers
-            - . :wq : save and quit current buffer
-            - . :wqa : save and quit all buffers
+        - = : : internal command prompt
+            - = :{n} : go to line number n
+            - = :w : save the current buffer into the file
+            - = :wa : save all buffers into the file
+            - = :q : quit current buffer
+            - = :qa : quit all buffers
+            - = :wq : save and quit current buffer
+            - = :wqa : save and quit all buffers
+            - = force quit buffers using ! at end of quit command
+                - e.g. :q! force quits current buffer
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)

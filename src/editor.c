@@ -16,8 +16,9 @@ editorconf editor;
 extern settingsType settings;
 
 void disableRawMode() {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
     die("tcsetattr");
+  clearTerminal();
 }
 
 void enableRawMode() {
@@ -59,7 +60,8 @@ int editorCheckSizeUpdate() {
   if (getWindowSize(&_sz.y, &_sz.x) == -1)
     die("invalid window size");
 
-  if (_sz.x == editor.screen_size.x && _sz.y == editor.screen_size.y) return 0;
+  if (_sz.x == editor.screen_size.x && _sz.y == editor.screen_size.y)
+    return 0;
   editor.screen_size.x = _sz.x;
   editor.screen_size.y = _sz.y;
   bufferUpdateSize(&editor.buf, editor.screen_size.x, editor.screen_size.y - 2);
@@ -135,19 +137,18 @@ void editorRefreshScreen() {
   abFree(&ab);
 }
 
-buffer *editorGetCurrentBuffer(){
+buffer *editorGetCurrentBuffer() {
   // TODO : get buffer from list of active buffers
   // when multiple buffers are supported
   return &editor.buf;
 }
 
-void _editorSzUpdtcb(){
-  if(editorCheckSizeUpdate()) editorRefreshScreen();
+void _editorSzUpdtcb() {
+  if (editorCheckSizeUpdate())
+    editorRefreshScreen();
 }
 
-int editorReadKey(){
-  return readKey(_editorSzUpdtcb);
-}
+int editorReadKey() { return readKey(_editorSzUpdtcb); }
 
 void editorProcessKeyPress() {
   int c = editorReadKey();
@@ -155,25 +156,25 @@ void editorProcessKeyPress() {
   buffer *buf = editorGetCurrentBuffer();
 
   switch (c) {
-    case HOME_KEY:
-      bufferGotoEnd(buf, editor.mode, JMP_BACK);
-      break;
-    case END_KEY:
-      bufferGotoEnd(buf, editor.mode, 0);
-      break;
+  case HOME_KEY:
+    bufferGotoEnd(buf, editor.mode, JMP_BACK);
+    break;
+  case END_KEY:
+    bufferGotoEnd(buf, editor.mode, 0);
+    break;
 
-    case PAGE_UP:
-    case PAGE_DOWN:
-      bufferPageScroll(buf, c);
-      break;
+  case PAGE_UP:
+  case PAGE_DOWN:
+    bufferPageScroll(buf, c);
+    break;
 
-    default:
-      if (editor.mode == NORMAL)
-        editorNormalModeKeyProc(c);
-      else if (editor.mode == INSERT)
-        editorInsertModeKeyProc(c);
-      else if (editor.mode == VISUAL)
-        editorVisualModeKeyProc(c);
+  default:
+    if (editor.mode == NORMAL)
+      editorNormalModeKeyProc(c);
+    else if (editor.mode == INSERT)
+      editorInsertModeKeyProc(c);
+    else if (editor.mode == VISUAL)
+      editorVisualModeKeyProc(c);
   }
 }
 
@@ -186,12 +187,7 @@ void editorNormalModeKeyProc(int c) {
           "WARNING! unchanged changes. Press CTRL-Z again to force quit");
       return;
     }
-    clearTerminal();
     exit(0);
-    break;
-
-  case CTRL_A:
-    editorSaveBuffer();
     break;
 
   default:
@@ -217,6 +213,10 @@ void editorProcessCommand() {
     editorSwitchMode(INSERT);
     bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
     break;
+  case ':':
+    emptyStack(&editor.cmdstk);
+    editorCmdPromptProc(":%s");
+    break;
   case '/':
     emptyStack(&editor.cmdstk);
     editorFind("/%s");
@@ -226,32 +226,40 @@ void editorProcessCommand() {
     break;
 
   case '$':
-    buf->cursor.y += pc.repx-1;
+    buf->cursor.y += pc.repx - 1;
     bufferGotoEnd(buf, editor.mode, 0);
     break;
   case '}':
-    while(pc.repx-- && bufferParaNav(buf, 0)){}
+    while (pc.repx-- && bufferParaNav(buf, 0)) {
+    }
     break;
   case '{':
-    while(pc.repx-- && bufferParaNav(buf, JMP_BACK)){}
+    while (pc.repx-- && bufferParaNav(buf, JMP_BACK)) {
+    }
     break;
   case 'w':
-    while(pc.repx-- && bufferWordJump(buf, 0)){}
+    while (pc.repx-- && bufferWordJump(buf, 0)) {
+    }
     break;
   case 'W':
-    while(pc.repx-- && bufferWordJump(buf, JMP_PUNC)){}
+    while (pc.repx-- && bufferWordJump(buf, JMP_PUNC)) {
+    }
     break;
   case 'e':
-    while(pc.repx-- && bufferWordJump(buf, JMP_END)){}
+    while (pc.repx-- && bufferWordJump(buf, JMP_END)) {
+    }
     break;
   case 'E':
-    while(pc.repx-- && bufferWordJump(buf, JMP_END | JMP_PUNC)){}
+    while (pc.repx-- && bufferWordJump(buf, JMP_END | JMP_PUNC)) {
+    }
     break;
   case 'b':
-    while(pc.repx-- && bufferWordJump(buf, JMP_BACK)){}
+    while (pc.repx-- && bufferWordJump(buf, JMP_BACK)) {
+    }
     break;
   case 'B':
-    while(pc.repx-- && bufferWordJump(buf, JMP_BACK | JMP_PUNC)){}
+    while (pc.repx-- && bufferWordJump(buf, JMP_BACK | JMP_PUNC)) {
+    }
     break;
 
   case 'h':
@@ -269,25 +277,33 @@ void editorProcessCommand() {
     bufferAbsoluteJump(buf, pc.repx);
     break;
   case 'H':
-    buf->cursor.y = buf->offset.y+settings.scrollpadding;
-    if(buf->cursor.y >= buf->row_size) buf->cursor.y = buf->row_size-1;
+    buf->cursor.y = buf->offset.y + settings.scrollpadding;
+    if (buf->cursor.y >= buf->row_size)
+      buf->cursor.y = buf->row_size - 1;
     break;
   case 'L':
-    buf->cursor.y = buf->offset.y+buf->size.y-1-settings.scrollpadding;
-    if(buf->cursor.y >= buf->row_size) buf->cursor.y = buf->row_size-1;
+    buf->cursor.y = buf->offset.y + buf->size.y - 1 - settings.scrollpadding;
+    if (buf->cursor.y >= buf->row_size)
+      buf->cursor.y = buf->row_size - 1;
     break;
 
   case 'f':
-    if (pc.arg1 == 0) return;
-    while(pc.repx-- && bufferFindChar(buf, pc.arg1, 0)){}
+    if (pc.arg1 == 0)
+      return;
+    while (pc.repx-- && bufferFindChar(buf, pc.arg1, 0)) {
+    }
     break;
   case 'F':
-    if (pc.arg1 == 0) return;
-    while(pc.repx-- && bufferFindChar(buf, pc.arg1, JMP_BACK)){}
+    if (pc.arg1 == 0)
+      return;
+    while (pc.repx-- && bufferFindChar(buf, pc.arg1, JMP_BACK)) {
+    }
     break;
   case 'r':
-    if (pc.arg1 == 0) return;
-    if (pc.arg1 < 127) bufferReplaceChar(buf, pc.arg1, pc.repx);
+    if (pc.arg1 == 0)
+      return;
+    if (pc.arg1 < 127)
+      bufferReplaceChar(buf, pc.arg1, pc.repx);
     break;
 
   case 0:
@@ -298,34 +314,92 @@ void editorProcessCommand() {
   emptyStack(&editor.cmdstk);
 }
 
+void editorCmdPromptProc(char *prompt) {
+  char *cmd = editorPrompt(prompt ? prompt : "Enter command:", NULL);
+
+  int _cl = strlen(cmd);
+  int _cmdtype = CMD_NONE;
+  int val = 0, i = 0;
+
+  while (i < _cl) {
+    if (cmd[i] >= '0' && cmd[i] <= '9') {
+      _cmdtype = CMD_NUM;
+      val = val * 10 + cmd[i] - '0';
+    } else
+      break;
+    i++;
+  }
+
+  if (_cmdtype == CMD_NUM) {
+    bufferAbsoluteJump(editorGetCurrentBuffer(), val);
+    return;
+  }
+  while (i < _cl) {
+    if (cmd[i] == 'w') {
+      if (_cmdtype & (CMD_WRITE | CMD_QUIT | CMD_ALL | CMD_QUIT)) {
+        _cmdtype = CMD_ERROR;
+        break;
+      }
+      _cmdtype |= CMD_WRITE;
+    } else if (cmd[i] == 'q') {
+      if (_cmdtype & (CMD_QUIT | CMD_ALL | CMD_QUIT)) {
+        _cmdtype = CMD_ERROR;
+        break;
+      }
+      _cmdtype |= CMD_QUIT;
+    } else if (cmd[i] == 'a') {
+      if (_cmdtype & (CMD_ALL | CMD_QUIT)) {
+        _cmdtype = CMD_ERROR;
+        break;
+      }
+      _cmdtype |= CMD_ALL;
+    } else if (cmd[i] == '!') {
+      if (!(_cmdtype & CMD_QUIT)) {
+        _cmdtype = CMD_ERROR;
+        break;
+      }
+      _cmdtype |= CMD_FORCE;
+    } else {
+      _cmdtype = CMD_ERROR;
+      break;
+    }
+    i++;
+  }
+  if(_cmdtype == CMD_ERROR){
+    editorSetStatusMsg("\x1b[91m Not an editor Command: %s\x1b[0m", cmd);
+    return;
+  }
+  editorSaveQuitBuffers(_cmdtype);
+}
+
 void editorInsertModeKeyProc(int c) {
   buffer *buf = editorGetCurrentBuffer();
   switch (c) {
-    case RETURN:
-      bufferInsertNewLine(buf);
-      break;
-    case BACKSPACE:
-    case CTRL_H:
-      bufferDelChar(buf, -1);
-      break;
-    case DEL_KEY:
-      bufferDelChar(buf, 0);
-      break;
+  case RETURN:
+    bufferInsertNewLine(buf);
+    break;
+  case BACKSPACE:
+  case CTRL_H:
+    bufferDelChar(buf, -1);
+    break;
+  case DEL_KEY:
+    bufferDelChar(buf, 0);
+    break;
 
-    case ARROW_LEFT:
-    case ARROW_RIGHT:
-    case ARROW_UP:
-    case ARROW_DOWN:
-      bufferMoveCursor(buf, c, editor.mode, 1);
-      break;
+  case ARROW_LEFT:
+  case ARROW_RIGHT:
+  case ARROW_UP:
+  case ARROW_DOWN:
+    bufferMoveCursor(buf, c, editor.mode, 1);
+    break;
 
-    case CTRL_C:
-    case ESCAPE:
-      editorSwitchMode(NORMAL);
-      break;
-    default:
-      bufferInsertChar(buf, c);
-      break;
+  case CTRL_C:
+  case ESCAPE:
+    editorSwitchMode(NORMAL);
+    break;
+  default:
+    bufferInsertChar(buf, c);
+    break;
   }
 }
 
@@ -346,20 +420,33 @@ void editorScroll() { bufferScroll(editorGetCurrentBuffer()); }
 
 void editorOpen(char *filename) { bufferOpenFile(&editor.buf, filename); }
 
-void editorSaveBuffer() {
-  if (editor.buf.filename == NULL) {
+void editorSaveBuffer(buffer *buf) {
+  if (buf->filename == NULL) {
     editorStatusBarUpdate();
-    if ((editor.buf.filename = editorPrompt("Save as: %s", NULL)) == NULL) {
+    if ((buf->filename = editorPrompt("Save as: %s", NULL)) == NULL) {
       editorSetStatusMsg("Save Aborted...");
       return;
     }
   }
 
-  int _sz = bufferSave(&editor.buf);
+  int _sz = bufferSave(buf);
   if (_sz == -1)
     editorSetStatusMsg("Save Failed I/O error: %s", strerror(errno));
   else
     editorSetStatusMsg("%d bytes written to disk", _sz);
+}
+
+void editorSaveQuitBuffers(int flags) {
+  // TODO: multiple buffers handling ....
+  buffer *buf = &editor.buf;
+  if (flags&CMD_WRITE) editorSaveBuffer(buf);
+  if ((flags&CMD_QUIT)){
+    if(buf->dirty && !(flags&CMD_FORCE)) {
+      editorSetStatusMsg("\x1b[91m Unsaved Changes. Use q! to force quit buffer. \x1b[0m");
+    } else {
+      exit(0);
+    }
+  }
 }
 
 char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
