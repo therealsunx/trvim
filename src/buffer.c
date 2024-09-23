@@ -50,6 +50,7 @@ void bufferUpdateSize(buffer *buf, int sx, int sy) {
   buf->size.y = sy;
   buf->size.x = sx-buf->linenumcol_sz;
 }
+
 void bufferUpdateLineColSz(buffer *buf){
   int _sz = buf->row_size;
   buf->linenumcol_sz = 2; // one space and at least one char
@@ -395,6 +396,7 @@ void bufferDeleteRow(buffer *buf, int index) {
           (buf->row_size - index - 1) * sizeof(erow));
   buf->row_size--;
   buf->dirty++;
+  bufferUpdateLineColSz(buf);
 }
 
 void bufferOpenFile(buffer *buf, char *filename) {
@@ -455,6 +457,7 @@ void bufferInsertNewLine(buffer *buf) {
   }
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
+  bufferUpdateLineColSz(buf);
 }
 
 void bufferDelChar(buffer *buf, int dir) {
@@ -483,6 +486,7 @@ void bufferDelChar(buffer *buf, int dir) {
   bufferUpdateRow(buf, row);
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
+  bufferUpdateLineColSz(buf);
 }
 
 char *bufferRowtoStr(buffer *buf, int *buflen) {
