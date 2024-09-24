@@ -35,7 +35,19 @@ _undergoing features are marked with .
 - . vim operation modes
     - = normal mode
         - = command parsing
+        - = mode switching
+            - = insert mode
+                - = i : cursor on left
+                - = a : cursor on right
+                - = I : cursor to starting character of line
+                - = A : cursor to end of line
+                - = o : add new line below and go to it
+                - = O : add new line below but stay on current one
+            - = select mode
+                - = v : normal selection mode
+                - = V : line selectio= mode
         - = '/' key find string
+            - arrow up/down key during search to go to next/previous one
         - = f : find character after cursor
         - = F : find character before cursor
         - = r : replace character with next one
@@ -63,8 +75,10 @@ _undergoing features are marked with .
             - = } : next paragraph end
         - = absolute line jumps : {n}J : jump to line 'n'
         - = quick page navigation : fast cursor jumps for efficient work
+            - = G : go to  last line of file
             - = H : move cursor towards beginning of visible page
             - = L : move cursor towards end of visible page
+						- = _ : move cursor to first character in the line
         - = movement keybinds
             - h : left
             - j : down
@@ -85,10 +99,11 @@ _undergoing features are marked with .
         - = cursor range increase
         - = thin cursor
         - = arrow based movements
-    - . visual mode/selection mode
-        - . character wise selection
-        - . line selection
+    - . selection mode
+        - = continous selection
+        - = highlight selection
         - . delete selection
+        - . replace selection
 - . bufferize the editor
     - . multiple buffers
     - . buffer navigation

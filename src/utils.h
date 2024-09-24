@@ -9,6 +9,11 @@ typedef struct {
   int y;
 } vec2;
 
+typedef struct {
+  vec2 start, end;
+  int dir;
+} boundstype;
+
 enum escapechars {
   NONE=0,
   DECIMAL,
@@ -19,7 +24,8 @@ enum escapechars {
 enum MODE {
   NORMAL = 0,
   INSERT,
-  VISUAL
+  VISUAL,
+  VISUAL_LINE,
 };
 
 enum JUMP_FLAGS {
@@ -38,6 +44,17 @@ enum CMD_TYPES {
   CMD_ERROR = 0x20,
 };
 
+enum BOUND_STATE {
+  BEFORE = -1,
+  INBOUND = 0,
+  AFTER = 1
+};
+
+enum VISUAL_DIR {
+  FORWARD = 1,
+  BACKWARD,
+};
+
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
 void clearTerminal();
@@ -50,5 +67,8 @@ int isSeparator(char c);
 int isPunct(char c);
 int isNumber(char *ch);
 
+int firstCharIndex(char *str);
 int countTabs(char *str);
 void showCursor(int x, int y);
+
+int checkPoint(boundstype bounds, vec2 point);

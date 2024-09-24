@@ -29,6 +29,7 @@ void initBuffer(buffer *buf) {
       .filename = NULL,
       .st = DEF_STATE,
       .syntax = NULL,
+      .selection = {DEF_VEC2, DEF_VEC2, FORWARD},
   };
 }
 
@@ -39,24 +40,19 @@ void freeBuffer(buffer *buf){
   free(buf->filename);
 }
 
-void bufferUpdateSize(buffer *buf, int sx, int sy) {
-  int _sz = buf->row_size;
-  buf->linenumcol_sz = 2; // one space and at least one char
-  while ((_sz /= 10))
-    buf->linenumcol_sz++;
-
-  buf->view_size.y = sy;
-  buf->view_size.x = sx;
-  buf->size.y = sy;
-  buf->size.x = sx-buf->linenumcol_sz;
-}
-
 void bufferUpdateLineColSz(buffer *buf){
   int _sz = buf->row_size;
-  buf->linenumcol_sz = 2; // one space and at least one char
+  buf->linenumcol_sz = 3; // one bar, one space and at least one char
   while ((_sz /= 10))
     buf->linenumcol_sz++;
   buf->size.x = buf->view_size.x-buf->linenumcol_sz;
+}
+
+void bufferUpdateSize(buffer *buf, int sx, int sy) {
+  buf->view_size.y = sy;
+  buf->view_size.x = sx;
+  buf->size.y = sy;
+  bufferUpdateLineColSz(buf);
 }
 
 void addWelcomeMsg(buffer *buf, abuf *ab) {
@@ -72,8 +68,11 @@ void addWelcomeMsg(buffer *buf, abuf *ab) {
 }
 
 void addColumn(buffer *buf, abuf *ab, int linenum){
-  char _lstr[48];
+  char _lstr[32];
   int val = linenum+1, len;
+
+  int _nsz = buf->linenumcol_sz-2; // one bar & one col
+  abAppend(ab, "\x1b[48;5;237m \x1b[m\x1b[90m", 20);
 
   if(linenum < buf->row_size){
     if(settings.flags&REL_LINENUM && linenum!=buf->cursor.y){
@@ -81,15 +80,23 @@ void addColumn(buffer *buf, abuf *ab, int linenum){
       if(val<0) val=-val;
     }
     len = linenum==buf->cursor.y ?
-      snprintf(_lstr, sizeof(_lstr), "\x1b[90m\x1b[33m%-*d\x1b[0m ", buf->linenumcol_sz - 1, val):
-      snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*d\x1b[0m ", buf->linenumcol_sz - 1, val);
+      snprintf(_lstr, sizeof(_lstr), "\x1b[33m%-*d ", _nsz, val):
+      snprintf(_lstr, sizeof(_lstr), "%*d ", _nsz, val);
   } else {
-    len = snprintf(_lstr, sizeof(_lstr), "\x1b[90m%*s\x1b[0m ", buf->linenumcol_sz - 1, "~");
+    len = snprintf(_lstr, sizeof(_lstr), "%*s ", _nsz, "~");
   }
   abAppend(ab, _lstr, len);
+  abAppend(ab, "\x1b[m", 3);
 }
 
-void bufferDrawRows(buffer *buf, abuf *ab) {
+void bufferDrawRows(buffer *buf, abuf *ab, int selflag) {
+  vec2 sstate = {BEFORE, BEFORE}; // for selection mode
+  boundstype sel = buf->selection;
+  if(selflag){
+    sel.end.x = rowCursorToRenderX(&buf->rows[sel.end.y], sel.end.x);
+    sel.start.x = rowCursorToRenderX(&buf->rows[sel.start.y], sel.start.x);
+  }
+
   for (int y = 0; y < buf->view_size.y; y++) {
     int _fr = y + buf->offset.y;
 
@@ -108,31 +115,59 @@ void bufferDrawRows(buffer *buf, abuf *ab) {
       unsigned char *hl = &buf->rows[_fr].hlchars[buf->offset.x];
       int _ptk = TK_NORMAL;
 
+      // selection mode processing
+      if(selflag){
+        if(sstate.y == BEFORE){
+          if(_fr>=sel.start.y) sstate.y = INBOUND;
+        } else if(sstate.y == INBOUND){
+          if(_fr > sel.end.y) sstate.y = AFTER;
+        } // no need to process after AFTER
+      }
+
       for (int i = 0; i < len; i++) {
+
+        // token highlighing
         int _clr = hlTokentoColorIndex(hl[i]);
         if (hl[i] != _ptk) {
           if (_ptk == TK_MATCH || _ptk == TK_KEYWORD3)
-            abAppend(ab, "\x1b[0m", 5);
+            abAppend(ab, "\x1b[m", 3);
 
           char _tcstr[24];
           int _cl;
           switch (hl[i]) {
-          case TK_MATCH:
-            _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm",
-                           _clr, 0);
-            break;
-          case TK_KEYWORD3:
-            _cl =
-                snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
-            break;
-          default:
-            _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
-            break;
+            case TK_MATCH:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm", _clr, 0);
+              break;
+            case TK_KEYWORD3:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
+              break;
+            default:
+              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
           }
 
           abAppend(ab, _tcstr, _cl);
           _ptk = hl[i];
         }
+
+        // selection mode highlighting
+        if(sstate.y == INBOUND){
+          if(sstate.x == BEFORE){
+            if(i>=sel.start.x){
+              sstate.x = INBOUND;
+              abAppend(ab, "\x1b[100m", 6);
+            }
+          } else if(sstate.x == INBOUND){
+            if(_fr == sel.end.y && i>sel.end.x){
+              sstate.x = AFTER;
+              abAppend(ab, "\x1b[49m", 5);
+            }
+          } // no need to process after AFTER
+
+          if(i==0 && sstate.x == INBOUND){
+            abAppend(ab, "\x1b[100m", 6);
+          }
+        }
+
         abAppend(ab, &ch[i], 1);
       }
     }
@@ -142,7 +177,7 @@ void bufferDrawRows(buffer *buf, abuf *ab) {
 }
 
 void bufferDrawStatusBar(buffer *buf, abuf *ab) {
-  abAppend(ab, "\x1b[100m", 6);
+  abAppend(ab, "\x1b[48;5;237m", 11);
 
   char lstatus[80], rstatus[80];
   int len = snprintf(lstatus, sizeof(lstatus), "%.20s [%s] %.3s",
@@ -440,12 +475,11 @@ void bufferInsertNewLine(buffer *buf) {
     erow *row = &buf->rows[buf->cursor.y];
     bufferInsertRow(buf, buf->cursor.y+1, &row->chars[buf->cursor.x],
                     row->size - buf->cursor.x);
-    row = &buf->rows[buf->cursor.y];
+    row = &buf->rows[buf->cursor.y++];
     row->size = buf->cursor.x;
     row->chars[row->size] = '\0';
     bufferUpdateRow(buf, row);
 
-    buf->cursor.y++;
     int _tcount = countTabs(row->chars);
     row = &buf->rows[buf->cursor.y];
     buf->cursor.x = 0;
@@ -455,6 +489,16 @@ void bufferInsertNewLine(buffer *buf) {
   buf->st.cursx = buf->cursor.x;
   buf->dirty++;
   bufferUpdateLineColSz(buf);
+}
+
+void bufferSwapRow(buffer *buf, int index1, int index2){
+  if(index1 == index2) return;
+  if(index1<0 || index1>=buf->row_size) return;
+  if(index2<0 || index2>=buf->row_size) return;
+
+  erow _tr = buf->rows[index1];
+  buf->rows[index1] = buf->rows[index2];
+  buf->rows[index2] = _tr;
 }
 
 void bufferDelChar(buffer *buf, int dir) {

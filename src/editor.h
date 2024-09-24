@@ -38,7 +38,8 @@ void editorProcessKeyPress();
 void editorNormalModeKeyProc(int key);
 void editorInsertModeKeyProc(int key);
 void editorSwitchMode(int mode);
-void editorVisualModeKeyProc(int key);
+void editorVisLineModeProc(int key);
+void editorUpdateSelection(int flags);
 
 void editorPageScroll(int key);
 void editorScroll();

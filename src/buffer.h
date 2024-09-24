@@ -19,14 +19,16 @@ typedef struct {
   erow *rows;
   char *filename;
   syntaxhl *syntax;
+  boundstype selection;
 } buffer;
 
 void initBuffer(buffer *buf);
 void freeBuffer(buffer *buf);
+void bufferUpdateLineColSz(buffer *buf);
 void bufferUpdateSize(buffer *buf, int sx, int sy);
 void addColumn(buffer *buf, abuf *ab, int linenum);
 void addWelcomeMsg(buffer *buf, abuf *ab);
-void bufferDrawRows(buffer *buf, abuf *ab);
+void bufferDrawRows(buffer *buf, abuf *ab, int selflag);
 void bufferDrawStatusBar(buffer *buf, abuf *ab);
 
 void bufferShowCursor(buffer *buf);
@@ -42,6 +44,7 @@ void bufferReplaceChar(buffer *buf, char char_, int repx);
 
 void bufferUpdateRow(buffer *buf, erow *row);
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len);
+void bufferSwapRow(buffer *buf, int index1, int index2);
 void bufferDeleteRow(buffer *buf, int index);
 void bufferOpenFile(buffer *buf, char *filename);
 void bufferInsertChar(buffer* buf, int ch);

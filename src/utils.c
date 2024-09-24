@@ -1,12 +1,12 @@
 #include <ctype.h>
-#include <stdlib.h>
-#include <sys/ioctl.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
-#include "utils.h"
 #include "settings.h"
+#include "utils.h"
 
 extern settingsType settings;
 
@@ -23,10 +23,11 @@ int getWindowSize_(int *rows, int *cols) {
   return 0;
 }
 
-int getWindowSize(int *rows, int *cols){
+int getWindowSize(int *rows, int *cols) {
   static struct winsize ws;
 
-  if( ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) return -1;
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0)
+    return -1;
   *rows = ws.ws_row;
   *cols = ws.ws_col;
   return 0;
@@ -39,8 +40,10 @@ int getCursorPosition(int *rows, int *cols) {
     return -1;
 
   while (i < sizeof(buf) - 1) {
-    if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
-    if (buf[i] == 'R') break;
+    if (read(STDIN_FILENO, &buf[i], 1) != 1)
+      break;
+    if (buf[i] == 'R')
+      break;
     i++;
   }
   buf[i] = '\0';
@@ -62,50 +65,75 @@ void die(const char *s) { // because func name:kill was already used
   exit(1);
 }
 
-int clamp(int value, int min, int max){
-  if(max<min){
+int clamp(int value, int min, int max) {
+  if (max < min) {
     int _t = min;
     min = max;
     max = _t;
   }
-  if(value<min) return min;
-  if(value>max) return max;
+  if (value < min)
+    return min;
+  if (value > max)
+    return max;
   return value;
 }
 
-int vec2areSame(vec2 v1, vec2 v2){
-  return v1.x == v2.x && v1.y == v2.y;
+int vec2areSame(vec2 v1, vec2 v2) { return v1.x == v2.x && v1.y == v2.y; }
+
+int isSeparator(char c) {
+  return c == ' ' || isPunct(c) || c == '\n' || c == '\0';
 }
 
-int isSeparator(char c){
-  return c==' ' || isPunct(c) || c == '\n' || c == '\0';
-}
-
-int isPunct(char c){
+int isPunct(char c) {
   return strchr("!$%&*+-./:<>=?@^|~#(){}[],;\"\\'", c) != NULL;
 }
 
-int isNumber(char *ch){
+int isNumber(char *ch) {
   int s = strlen(ch);
-  for(int i=0; i<s; i++){
-    if(!isdigit(ch[i])) return 0;
+  for (int i = 0; i < s; i++) {
+    if (!isdigit(ch[i]))
+      return 0;
   }
   return 1;
 }
 
-int countTabs(char *str){
-  int _count = 0, _sz=strlen(str);
-  for(int i=0; i<_sz; i++){
-    if(str[i]==' ') _count++;
-    else if(str[i] == '\t') _count+=settings.tabwidth;
-    else break;
+int firstCharIndex(char *str) {
+  int x = 0, _len = strlen(str);
+  for (; x < _len; x++){
+    if (str[x] != ' ' && str[x] != '\t')
+      break;
   }
-  return _count/settings.tabwidth;
+
+  return x;
 }
 
-void showCursor(int y, int x){
+int countTabs(char *str) {
+  int _count = 0, _sz = strlen(str);
+  for (int i = 0; i < _sz; i++) {
+    if (str[i] == ' ')
+      _count++;
+    else if (str[i] == '\t')
+      _count += settings.tabwidth;
+    else
+      break;
+  }
+  return _count / settings.tabwidth;
+}
+
+void showCursor(int y, int x) {
   char _cbuf[32];
   int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH\x1b[?25h", y, x);
-  if(l==0) die("cursor positioning failed");
+  if (l == 0)
+    die("cursor positioning failed");
   write(STDOUT_FILENO, _cbuf, l);
+}
+
+int checkPoint(boundstype bounds, vec2 point){
+  if(point.y<bounds.start.y || 
+      (point.y==bounds.start.y && point.x<bounds.start.x)) return BEFORE;
+
+  if(point.y>bounds.end.y ||
+      (point.y==bounds.end.y && point.x>bounds.end.x)) return AFTER;
+
+  return INBOUND;
 }
