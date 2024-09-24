@@ -51,3 +51,4 @@ int isPunct(char c);
 int isNumber(char *ch);
 
 int countTabs(char *str);
+void showCursor(int x, int y);

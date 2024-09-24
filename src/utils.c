@@ -102,3 +102,10 @@ int countTabs(char *str){
   }
   return _count/settings.tabwidth;
 }
+
+void showCursor(int y, int x){
+  char _cbuf[32];
+  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH\x1b[?25h", y, x);
+  if(l==0) die("cursor positioning failed");
+  write(STDOUT_FILENO, _cbuf, l);
+}

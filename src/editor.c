@@ -73,8 +73,10 @@ void editorDrawBuffers(abuf *ab) {
   bufferDrawStatusBar(&editor.buf, ab);
 }
 
-void editorShowCursor(abuf *ab) { bufferShowCursor(&editor.buf, ab); }
-int editorReadKey();
+void editorShowCursor() {
+  buffer *buf = &editor.buf;
+  bufferShowCursor(buf); 
+}
 
 void editorDrawStsMsgBar(abuf *ab) {
   char cmdsts[editor.cmdstk.top];
@@ -131,10 +133,10 @@ void editorRefreshScreen() {
 
   editorDrawBuffers(&ab);
   editorDrawStsMsgBar(&ab);
-  editorShowCursor(&ab);
-
   write(STDOUT_FILENO, ab.buf, ab.len);
   abFree(&ab);
+  editorShowCursor();
+
 }
 
 buffer *editorGetCurrentBuffer() {
@@ -458,6 +460,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
   while (1) {
     editorSetStatusMsg(prompt, buf);
     editorRefreshScreen();
+    showCursor(editor.screen_size.y, strlen(editor.statusmsg)+1);
 
     int c = editorReadKey();
 

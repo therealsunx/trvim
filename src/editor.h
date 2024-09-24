@@ -26,7 +26,7 @@ void freeEditor();
 // -- editor prcs --
 int editorCheckSizeUpdate();
 void editorDrawBuffers(abuf *appendbuffer);
-void editorShowCursor(abuf *ab);
+void editorShowCursor();
 void editorDrawStsMsgBar(abuf *ab);
 void editorSetStatusMsg(const char *fmt, ...);
 void editorStatusBarUpdate();

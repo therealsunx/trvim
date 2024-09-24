@@ -33,7 +33,7 @@ _undergoing features are marked with .
     - = mode indicator
     - = command buffer
 - . vim operation modes
-    - . normal mode
+    - = normal mode
         - = command parsing
         - = '/' key find string
         - = f : find character after cursor

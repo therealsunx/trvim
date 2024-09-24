@@ -164,13 +164,10 @@ void bufferDrawStatusBar(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[m", 3);
 }
 
-void bufferShowCursor(buffer *buf, abuf *ab) {
-  char _cbuf[32];
-  snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH",
-           buf->cursor.y - buf->offset.y + 1,
-           buf->render_x - buf->offset.x + buf->linenumcol_sz + 1);
-  abAppend(ab, _cbuf, strlen(_cbuf));
-  abAppend(ab, "\x1b[?25h", 6); // show the cursor
+void bufferShowCursor(buffer *buf) {
+  showCursor(
+      buf->cursor.y - buf->offset.y + 1,
+      buf->render_x - buf->offset.x + buf->linenumcol_sz + 1);
 }
 
 void bufferMoveCursor(buffer *buf, int key, int mode, int repx) {
