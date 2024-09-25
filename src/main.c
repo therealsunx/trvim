@@ -1,8 +1,6 @@
 #include "editor.h"
 
-// test comment
-    // test comment
-int main(int argc, char* argv[]) { // test comment
+int main(int argc, char* argv[]) {
   enableRawMode();
   initEditor();
   if(argc >= 2) editorOpen(argv[1]);
@@ -12,6 +10,5 @@ int main(int argc, char* argv[]) { // test comment
     editorRefreshScreen();
     editorProcessKeyPress();
   }
-  freeEditor();
   return 0;
 }

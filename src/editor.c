@@ -2,32 +2,35 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
 #include "editor.h"
+#include "keybinds.h"
 #include "input.h"
 #include "settings.h"
 
 // -- data --
 editorconf editor;
-extern settingsType settings;
+settingsType settings = DEF_SETTINGS;
+struct termios org_termios;
 
-void disableRawMode() {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &editor.org_termios) == -1)
+void disableRawMode(void) {
+  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &org_termios) == -1)
     die("tcsetattr");
   clearTerminal();
 }
 
-void enableRawMode() {
-  if (tcgetattr(STDIN_FILENO, &editor.org_termios) == -1)
+void enableRawMode(void) {
+  if (tcgetattr(STDIN_FILENO, &org_termios) == -1)
     die("tcsetattr");
 
   atexit(disableRawMode);
 
-  struct termios raw = editor.org_termios;
+  struct termios raw = org_termios;
   raw.c_iflag &= ~(BRKINT | INPCK | ISTRIP | IXON | ICRNL);
   raw.c_lflag &= ~(ECHO | IEXTEN | ICANON | ISIG);
   raw.c_oflag &= ~(OPOST);
@@ -39,7 +42,7 @@ void enableRawMode() {
     die("tcsetattr");
 }
 
-void initEditor() {
+void initEditor(void) {
   initBuffer(&editor.buf);
   editor.statusmsg[0] = '\0';
   editor.statusmsg_time = 0;
@@ -50,12 +53,12 @@ void initEditor() {
   atexit(freeEditor);
 }
 
-void freeEditor() {
+void freeEditor(void) {
   freeStack(&editor.cmdstk);
   freeBuffer(&editor.buf);
 }
 
-int editorCheckSizeUpdate() {
+int editorCheckSizeUpdate(void) {
   vec2 _sz;
   if (getWindowSize(&_sz.y, &_sz.x) == -1)
     die("invalid window size");
@@ -75,7 +78,7 @@ void editorDrawBuffers(abuf *ab) {
   bufferDrawStatusBar(&editor.buf, ab);
 }
 
-void editorShowCursor() {
+void editorShowCursor(void) {
   buffer *buf = &editor.buf;
   bufferShowCursor(buf); 
 }
@@ -110,7 +113,7 @@ void editorSetStatusMsg(const char *fmt, ...) {
   editor.statusmsg_time = time(NULL);
 }
 
-void editorStatusBarUpdate() {
+void editorStatusBarUpdate(void) {
   if (editor.mode == NORMAL)
     return;
   editor.statusmsg_time = time(NULL);
@@ -122,7 +125,7 @@ void editorStatusBarUpdate() {
     editorSetStatusMsg("-- VISUAL_LINE --");
 }
 
-void editorRefreshScreen() {
+void editorRefreshScreen(void) {
   editorStatusBarUpdate();
   editorScroll();
   abuf ab = ABUF_INIT;
@@ -143,38 +146,65 @@ void editorRefreshScreen() {
 
 }
 
-buffer *editorGetCurrentBuffer() {
+buffer *editorGetCurrentBuffer(void) {
   // TODO : get buffer from list of active buffers
   // when multiple buffers are supported
   return &editor.buf;
 }
 
-void _editorSzUpdtcb() {
+void _editorSzUpdtcb(void) {
   if (editorCheckSizeUpdate())
     editorRefreshScreen();
 }
 
-int editorReadKey() { return readKey(_editorSzUpdtcb); }
+int editorReadKey(void) { return readKey(_editorSzUpdtcb); }
 
-void editorProcessKeyPress() {
+void editorProcessKeyPress(void) {
   int c = editorReadKey();
 
   buffer *buf = editorGetCurrentBuffer();
 
+  if(buf->row_size == 0){
+    switch(c){
+      case 'i':
+      case 'I':
+      case 'a':
+      case 'A':
+        editor.mode = INSERT;
+        bufferInsertRow(buf, 0, "", 0);
+        break;
+      case 'o':
+        editor.mode = INSERT;
+        bufferInsertRow(buf, 0, "", 0);
+        bufferInsertNewLine(buf);
+        break;
+      case 'O':
+        editor.mode = INSERT;
+        bufferInsertRow(buf, 0, "", 0);
+        bufferInsertRow(buf, 1, "", 0);
+        break;
+    }
+    return;
+  }
+
   switch (c) {
     case HOME_KEY:
+      if(buf->row_size == 0) return;
       bufferGotoEnd(buf, editor.mode, JMP_BACK);
       break;
     case END_KEY:
+      if(buf->row_size == 0) return;
       bufferGotoEnd(buf, editor.mode, 0);
       break;
 
     case PAGE_UP:
     case PAGE_DOWN:
+      if(buf->row_size == 0) return;
       bufferPageScroll(buf, c);
       break;
 
     default:
+      if(buf->row_size == 0) return;
       if (editor.mode == INSERT) editorInsertModeKeyProc(c);
       else editorNormalModeKeyProc(c);
   }
@@ -200,7 +230,7 @@ void editorNormalModeKeyProc(int c) {
   qcount = 2;
 }
 
-void editorProcessCommand() {
+void editorProcessCommand(void) {
   parsedcmd_t pc = parseCommand(&editor.cmdstk);
   if (!pc.repx)
     pc.repx++;
@@ -516,55 +546,7 @@ void editorSwitchMode(int mode) {
   editor.mode = mode;
 }
 
-void editorVisLineModeProc(int c) {
-  static int qcount = 2;
-  switch(c){
-    case CTRL_Z:
-      if(editor.buf.dirty && --qcount) {
-        editorSetStatusMsg( "WARNING! unchanged changes. Press CTRL-Z again to force quit");
-        return;
-      }
-      exit(0);
-      break;
-    case CTRL_C:
-    case ESCAPE:
-      editorSwitchMode(NORMAL);
-      break;
-    default:
-      push(&editor.cmdstk, c);
-  }
-  
-  parsedcmd_t pc = parseCommand(&editor.cmdstk);
-  if (!pc.repx) pc.repx++;
-
-  buffer *buf = editorGetCurrentBuffer();
-
-  switch(pc.cmd){
-    case 'h':
-    case 'j':
-    case 'k':
-    case 'l':
-    case ARROW_LEFT:
-    case ARROW_RIGHT:
-    case ARROW_UP:
-    case ARROW_DOWN:
-      bufferMoveCursor(buf, pc.cmd, editor.mode, pc.repx);
-      break;
-    case ':':
-      emptyStack(&editor.cmdstk);
-      editorCmdPromptProc(":%s");
-      break;
-    case '/':
-      emptyStack(&editor.cmdstk);
-      editorFind("/%s");
-      break;
-    default:
-      break;
-  }
-  emptyStack(&editor.cmdstk);
-}
-
-void editorScroll() { bufferScroll(editorGetCurrentBuffer()); }
+void editorScroll(void) { bufferScroll(editorGetCurrentBuffer()); }
 
 void editorOpen(char *filename) { bufferOpenFile(&editor.buf, filename); }
 

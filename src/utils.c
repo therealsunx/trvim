@@ -54,7 +54,7 @@ int getCursorPosition(int *rows, int *cols) {
   return 0;
 }
 
-void clearTerminal() {
+void clearTerminal(void) {
   write(STDIN_FILENO, "\x1b[2J", 4);
   write(STDIN_FILENO, "\x1b[H", 3);
 }

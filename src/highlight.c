@@ -3,15 +3,86 @@
 
 char *C_FMATCH[] = {".c", ".h", ".cpp", ".hpp", NULL};
 char *C_KEYWORDS[] = {
+  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", 
   "switch", "if", "while", "for", "break", "continue", "return", "else",
   "struct", "union", "typedef", "static", "enum", "class", "case", "extern", "default",
-  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|",
-  "void|", 
   NULL
 };
 char *C_PREPROC[] = {
   "include", "define", "undef", "ifdef", "if", "else", "elif", "endif",
   "error", "pragma", NULL
+};
+
+char *JS_FMATCH[] = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", NULL};
+char *JS_KEYWORDS[] = {
+  "var|", "let|", "const|", "boolean|", "number|", "string|", "undefined|", "null|", "BigInt|", "Symbol|",
+  "async", "await", "break", "case", "catch", "class", "continue", "debugger", "default", "delete", 
+  "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", 
+  "new", "return", "super", "switch", "this", "throw", "try", "typeof", "void", "while", "with", "yield", 
+  NULL
+};
+
+char *JSON_FMATCH[] = {".json", NULL};
+char *JSON_KEYWORDS[] = {
+  "true", "false", "null",
+  NULL
+};
+
+char *SHELL_FMATCH[] = {".sh", ".bash", NULL};
+char *SHELL_KEYWORDS[] = {
+  "if", "fi", "else", "elif", "for", "do", "done", "while", "until", "case", "esac", "break", "continue", 
+  "eval", "exec", "exit", "export", "function", "getopts", "let", "local", "read", "return", "set", 
+  "shift", "test", "then", "times", "trap", "umask", "unset", 
+  NULL
+};
+
+char *RUST_FMATCH[]={".rs", NULL};
+char *RUST_KEYWORDS[] = {
+  "bool|", "char|", "i8|", "i16|", "i32|", "i64|", "i128|", "u8|", "u16|", "u32|", "u64|", "u128|", 
+  "f32|", "f64|", "str|",
+  "as", "async", "await", "break", "const", "continue", "crate", "else", "enum", "extern", "false", 
+  "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", 
+  "self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while", 
+  NULL
+};
+
+char *PYTHON_FMATCH[] = {".py", NULL};
+char *PYTHON_KEYWORDS[] = {
+  "int|", "float|", "bool|", "str|", "list|", "dict|", "set|", "tuple|", "None|", "True|", "False|",
+  "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", 
+  "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", 
+  "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", 
+  NULL
+};
+
+char *ODIN_FMATCH[] = {".odin", NULL};
+char *ODIN_KEYWORDS[] = {
+  "int|", "float|", "bool|", "string|", "rune|", "any|", 
+  "package", "import", "if", "else", "for", "when", "switch", "defer", "proc", "struct", "enum", 
+  "map", "break", "continue", "return", "type", "true", "false", 
+  NULL
+};
+
+char *ZIG_FMATCH[] = {".zig", NULL};
+char *ZIG_KEYWORDS[] = {
+  "i8|", "i16|", "i32|", "i64|", "i128|", "u8|", "u16|", "u32|", "u64|", "u128|", 
+  "f16|", "f32|", "f64|", "bool|", "void|", "noreturn|",
+  "fn", "pub", "const", "var", "if", "else", "while", "for", "switch", "comptime", "struct", 
+  "enum", "break", "continue", "return", "defer", "true", "false", 
+  NULL
+};
+
+char *CSHARP_FMATCH[] = {".cs", NULL};
+char *CSHARP_KEYWORDS[] = {
+  "int|", "float|", "double|", "decimal|", "bool|", "char|", "string|", "object|", 
+  "abstract", "as", "base", "break", "case", "catch", "checked", "class", "const", "continue", 
+  "default", "delegate", "do", "else", "enum", "event", "explicit", "extern", "false", "finally", 
+  "fixed", "for", "foreach", "goto", "if", "implicit", "in", "interface", "internal", "is", 
+  "lock", "namespace", "new", "null", "operator", "out", "override", "params", "private", 
+  "protected", "public", "readonly", "ref", "return", "sealed", "sizeof", "stackalloc", 
+  "static", "struct", "switch", "this", "throw", "true", "try", "typeof", "unchecked", 
+  "unsafe", "using", "virtual", "void", "volatile", "while", 
+  NULL
 };
 
 syntaxhl HLDB[] ={
@@ -24,6 +95,78 @@ syntaxhl HLDB[] ={
     "//",
     HL_NUMBERS|HL_KEYWORD|HL_PUNCTUATION|HL_STRING|HL_COMMENT|HL_PREPROC
   },
+  {
+    "js",
+    JS_FMATCH,
+    JS_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_PUNCTUATION|HL_STRING|HL_COMMENT
+  },
+  {
+    "json",
+    JSON_FMATCH,
+    JSON_KEYWORDS,
+    NULL,
+    '\0',
+    NULL,
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION
+  },
+  {
+    "shell",
+    SHELL_FMATCH,
+    SHELL_KEYWORDS,
+    NULL,
+    '\0',
+    "#",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "rust",
+    RUST_FMATCH,
+    RUST_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_PUNCTUATION|HL_STRING|HL_COMMENT
+  },
+  {
+    "python",
+    PYTHON_FMATCH,
+    PYTHON_KEYWORDS,
+    NULL,
+    '\0',
+    "#",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "odin",
+    ODIN_FMATCH,
+    ODIN_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "zig",
+    ZIG_FMATCH,
+    ZIG_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "csharp",
+    CSHARP_FMATCH,
+    CSHARP_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  }
 };
 
 int HLDB_SIZE = sizeof(HLDB)/sizeof(HLDB[0]);

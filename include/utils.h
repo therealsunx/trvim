@@ -57,7 +57,7 @@ enum VISUAL_DIR {
 
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
-void clearTerminal();
+void clearTerminal(void);
 void die(const char *s);
 
 int clamp(int value, int min, int max);

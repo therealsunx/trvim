@@ -1,10 +1,92 @@
-# therealtxt
-I am attempting to make a text editor, that is similar in use as vim. Let's see how far it goes.
+# **trvim** - terminal text editor
+![img](trvim.png)
 
-## what is expected?
-A comprehensive text editor with syntax highlighting and few autocompletions for general text editing.
+### **Overview**
+**trvim** - is a text editor built in C, it is fast and is similiar in operation to vim. It uses the power of non-canonical terminal to provide quick, robust and easy operation. It supports features like syntax highlighting, minimal auto-completion, auto-indentation, cross-platform use, no-mouse movement bindings, etc. Enjoy !!
 
-## Features
+## **Key Features**
+Here are the key features supported by this editor.
+| Feature                        | Description                                                                                             |
+|---------------------------------|---------------------------------------------------------------------------------------------------------|
+| **Syntax Highlighting**         | Color-coded syntax for multiple programming languages to enhance code readability and debugging.         |
+| **Cross-platform Support**      | Fully functional across major platforms (Linux, Windows, macOS).                                         |
+| **Lightweight & Fast**          | Optimized for speed and minimal memory usage, even when handling large files.                           |
+| **Multiple Language Support**   | Supports a wide range of programming languages with easy language switching.                             |
+| **Faster Navigation**           | Has easy to use keybinds (similiar to vim), with zero-mouse requirement, allowing quicker navigation.   |
+
+
+## **Supported Programming Languages**
+The editor supports syntax highlighting for the following languages:
+
+| Language        | Extension(s)        |
+|-----------------|---------------------|
+| **C/C++**       | `.c`, `.cpp`, `.h`, `.hpp`  |
+| **JavaScript**  | `.js`, `.mjs`, `.cjs`, `.ts`, `.jsx`, `.tsx` |
+| **Python**      | `.py`               |
+| **Rust**        | `.rs`               |
+| **Shell Script**| `.sh`, `.bash`      |
+| **JSON**        | `.json`             |
+| **Odin**        | `.odin`             |
+| **Zig**         | `.zig`              |
+| **C#**          | `.cs`               |
+| **Go**          | `.go`               |
+
+
+## **Syntax Highlighting**
+The editor's syntax highlighting engine is designed to provide clear, readable code with visually distinct colors for different parts of your code, such as:
+
+- **Primitive Types**: Highlighted with a specific color to differentiate from other keywords.
+- **Keywords**: Other important language constructs like `for`, `if`, `return` are highlighted in a separate color for easy identification. There are 3 different types of keywords classified for each languages to provide better distinction.
+- **Comments**: Comments are rendered in a lighter or dimmed color, allowing the actual code to stand out more.
+- **Preprocessor Directives**: Preprocessor instructions are styled in a distinct format for languages that support them.
+
+Syntax highlighting is done by built-in highlight database, so external plugin is used for it. It only has minimal required highlighting required for any language, which prevents the editor from being littered with errors, warnings and whatnot.
+
+### **Syntax Flags**
+Syntax highlighting is controlled via several flags that allow for customizable styling:
+
+| Flag                 | Description                                                                |
+|----------------------|----------------------------------------------------------------------------|
+| `HL_NUMBERS`         | Highlights numeric literals (e.g., `123`, `0xFF`).                          |
+| `HL_PREPROC`         | Highlights preprocessor-like directives (e.g., `#include`, `import`).       |
+| `HL_KEYWORD`         | Highlights language keywords (e.g., `for`, `if`, `while`).                  |
+| `HL_PUNCTUATION`     | Highlights punctuation and symbols (e.g., `{`, `}`, `;`).                   |
+| `HL_COMMENT`         | Highlights single-line and multi-line comments.                             |
+| `HL_STRING`          | Highlights string literals.                                                 |
+
+_If you want to customize your own version of **trvim**, then you can make use of this information to set up highlighting rules in `highlight.c`. Otherwise ignore this information._
+
+## **Getting Started**
+
+### **Installation**
+1. Clone the repository to your local machine:
+    ```bash
+    git clone https://github.com/therealsunx/trvim
+    ```
+2. Run the provided bash script to compile and install the editor:
+    ```bash
+    cd trvim
+    ./install.sh
+    ```
+3. Launch the editor from your terminal:
+    ```bash
+    trvim filename.c
+    ```
+
+## **Customization**
+1. Clone the repository to your local machine:
+    ```bash
+    git clone https://github.com/therealsunx/trvim
+    ```
+2. Set up the project for editing using provided setup shell script:
+    ```bash
+    ./setup.sh
+    ```
+
+## **License**
+This project is licensed under whatever it is used in `LICENSE` file. I copied it from my another project. Ignore any mistakes. See the `LICENSE` file for more information.
+
+## Features-List (TODO board)
 _completed features are marked with =
 _undergoing features are marked with .
 

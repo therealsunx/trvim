@@ -526,8 +526,10 @@ void bufferOpenFile(buffer *buf, char *filename) {
   buf->filename = strdup(filename);
 
   FILE *fp = fopen(buf->filename, "r");
-  if (!fp)
-    die("failed to open file");
+  if (!fp) {
+    fp = fopen(buf->filename, "w");
+    if(!fp) die("failed to open file");
+  }
 
   bufferSelectSyntax(buf);
 
