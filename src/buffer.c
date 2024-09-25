@@ -176,6 +176,92 @@ void bufferDrawRows(buffer *buf, abuf *ab, int selflag) {
   }
 }
 
+void bufferUpdateSelection(buffer *buf, int mode, int flags){
+  if(!flags){
+    buf->selection.start = buf->cursor;
+    buf->selection.end = buf->cursor;
+    buf->selection.dir = FORWARD;
+  } else {
+    int cst = checkPoint(buf->selection, buf->cursor);
+    if(buf->selection.dir == FORWARD){
+      if(cst == BEFORE){
+        buf->selection.dir = BACKWARD;
+        buf->selection.end = buf->selection.start;
+        buf->selection.start = buf->cursor;
+      }else buf->selection.end = buf->cursor;
+    } else if(buf->selection.dir == BACKWARD){
+      if(cst == AFTER){
+        buf->selection.dir = FORWARD;
+        buf->selection.start = buf->selection.end;
+        buf->selection.end = buf->cursor;
+      } else buf->selection.start = buf->cursor;
+    }
+  }
+
+  if(mode == VISUAL_LINE){
+    buf->selection.start.x = 0;
+    buf->selection.end.x = buf->rows[buf->selection.end.y].size-1;
+  }
+}
+
+void bufferSwapSelCursor(buffer *buf){
+  if(buf->selection.dir == FORWARD){
+    buf->cursor = buf->selection.start;
+    buf->selection.dir = BACKWARD;
+  }else{
+    buf->cursor = buf->selection.end;
+    buf->selection.dir = FORWARD;
+  }
+}
+
+void bufferDeleteSelection(buffer *buf){
+  // delete from last to first to avoid memory misplace issues
+  int y = buf->selection.end.y, x;
+  erow *row;
+  for(;y>=buf->selection.start.y; y--){
+    row = &buf->rows[y];
+    if(y == buf->selection.end.y){
+      x = y == buf->selection.start.y?buf->selection.start.x:0;
+      rowDeleteCharacters(row, x, buf->selection.end.x-x+1);
+      if(row->size == 0) bufferDeleteRows(buf, y, 1);
+      else bufferUpdateRow(buf, row);
+    } else if (y == buf->selection.start.y){
+      x = buf->selection.start.x;
+      rowDeleteCharacters(row, x, row->size-x+1);
+      if(row->size == 0) bufferDeleteRows(buf, y, 1);
+      else bufferUpdateRow(buf, row);
+    } else {
+      bufferDeleteRows(buf, y, 1);
+    }
+  }
+  buf->cursor = buf->selection.start;
+  if(buf->cursor.y>=buf->row_size){
+    buf->cursor.y = buf->row_size-1;
+    buf->cursor.x = buf->rows[buf->cursor.y].size-1;
+  } else buf->cursor.x = clamp(buf->cursor.x, 0, buf->rows[buf->cursor.y].size-1);
+  buf->st.cursx = buf->cursor.x;
+}
+
+void bufferReplaceSelection(buffer *buf, char c){
+  int y = buf->selection.end.y, x;
+  erow *row;
+  for(;y>=buf->selection.start.y; y--){
+    row = &buf->rows[y];
+    if(y == buf->selection.end.y){
+      x = y == buf->selection.start.y?buf->selection.start.x:0;
+      rowReplaceCharacter(row, c, x, buf->selection.end.x-x+1);
+      bufferUpdateRow(buf, row);
+    } else if (y == buf->selection.start.y){
+      x = buf->selection.start.x;
+      rowReplaceCharacter(row, c, x, row->size-x+1);
+      bufferUpdateRow(buf, row);
+    } else {
+      rowReplaceCharacter(row, c, 0, row->size);
+      bufferUpdateRow(buf, row);
+    }
+  }
+}
+
 void bufferDrawStatusBar(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[48;5;237m", 11);
 
@@ -267,7 +353,7 @@ void bufferScroll(buffer *buf) {
       buf->offset.y = 0;
   }
 
-  // horizontal scroll 2/3+4 -5 handler
+  // horizontal scroll handler
   buf->render_x =
       buf->cursor.y < buf->row_size
           ? rowCursorToRenderX(&buf->rows[buf->cursor.y], buf->cursor.x)
@@ -420,13 +506,17 @@ void bufferInsertRow(buffer *buf, int index, char *s, size_t len) {
   buf->dirty++;
 }
 
-void bufferDeleteRow(buffer *buf, int index) {
+void bufferDeleteRows(buffer *buf, int index, int len) {
   if (index < 0 || index >= buf->row_size)
     return;
-  rowFree(&buf->rows[index]);
-  memmove(&buf->rows[index], &buf->rows[index + 1],
-          (buf->row_size - index - 1) * sizeof(erow));
-  buf->row_size--;
+  if(index+len > buf->row_size) len = buf->row_size-index;
+  if(len == 0) return;
+
+  for(int i=index; i<index+len; i++) rowFree(&buf->rows[i]);
+
+  memmove(&buf->rows[index], &buf->rows[index + len],
+          (buf->row_size - index - len) * sizeof(erow));
+  buf->row_size-=len;
   buf->dirty++;
   bufferUpdateLineColSz(buf);
 }
@@ -508,19 +598,19 @@ void bufferDelChar(buffer *buf, int dir) {
   erow *row = &buf->rows[buf->cursor.y];
   int _ps = buf->cursor.x + dir;
   if (_ps >= 0 && _ps<row->size) {
-    rowDeleteCharacter(row, _ps);
+    rowDeleteCharacters(row, _ps, 1);
     if (dir < 0) buf->cursor.x--;
   } else if(_ps == row->size){
     if(buf->cursor.y+1 == buf->row_size) return;
     erow *_nrow = &buf->rows[buf->cursor.y+1];
     rowAppendString(row, _nrow->chars, _nrow->size);
-    bufferDeleteRow(buf, buf->cursor.y+1);
+    bufferDeleteRows(buf, buf->cursor.y+1, 1);
   }else {
     if (buf->cursor.x == 0 && buf->cursor.y == 0)
       return;
     buf->cursor.x = buf->rows[buf->cursor.y - 1].size;
     rowAppendString(&buf->rows[buf->cursor.y - 1], row->chars, row->size);
-    bufferDeleteRow(buf, buf->cursor.y);
+    bufferDeleteRows(buf, buf->cursor.y, 1);
     buf->cursor.y--;
   }
   row = &buf->rows[buf->cursor.y];

@@ -178,37 +178,8 @@ void editorProcessKeyPress() {
       if (editor.mode == INSERT) editorInsertModeKeyProc(c);
       else editorNormalModeKeyProc(c);
   }
-  if(editor.mode == VISUAL_LINE || editor.mode == VISUAL) editorUpdateSelection(1);
-}
-
-void editorUpdateSelection(int flags){
-  buffer *buf = editorGetCurrentBuffer();
-
-  if(!flags){
-    buf->selection.start = buf->cursor;
-    buf->selection.end = buf->cursor;
-    buf->selection.dir = FORWARD;
-  } else {
-    int cst = checkPoint(buf->selection, buf->cursor);
-    if(buf->selection.dir == FORWARD){
-      if(cst == BEFORE){
-        buf->selection.dir = BACKWARD;
-        buf->selection.end = buf->selection.start;
-        buf->selection.start = buf->cursor;
-      }else buf->selection.end = buf->cursor;
-    } else if(buf->selection.dir == BACKWARD){
-      if(cst == AFTER){
-        buf->selection.dir = FORWARD;
-        buf->selection.start = buf->selection.end;
-        buf->selection.end = buf->cursor;
-      } else buf->selection.start = buf->cursor;
-    }
-  }
-
-  if(editor.mode == VISUAL_LINE){
-    buf->selection.start.x = 0;
-    buf->selection.end.x = buf->rows[buf->selection.end.y].size-1;
-  }
+  if(editor.mode == VISUAL_LINE || editor.mode == VISUAL)
+    bufferUpdateSelection(buf, editor.mode, 1);
 }
 
 void editorNormalModeKeyProc(int c) {
@@ -289,15 +260,41 @@ void editorProcessCommand() {
     }
   }
 
-  if(editor.mode == VISUAL || editor.mode == VISUAL_LINE){ // TODO : visual mode specific keybinds
+  if(editor.mode == VISUAL || editor.mode == VISUAL_LINE){
+    // TODO : visual mode specific keybinds
     int success = 1;
     switch(pc.cmd){
       case CTRL_C:
       case ESCAPE:
         editorSwitchMode(NORMAL);
         break;
+      case 'o':
+      case 'O':
+        bufferSwapSelCursor(buf);
+        break;
+      case 'd':
+      case 'x':
+        bufferDeleteSelection(buf);
+        editorSwitchMode(NORMAL);
+        break;
+      case 'c':
+        {
+          int ec = buf->cursor.y;
+          bufferDeleteSelection(buf);
+          editorSwitchMode(INSERT);
+          if(editor.mode == VISUAL) bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
+          else if(ec >= buf->row_size) {
+            bufferGotoEnd(buf, editor.mode, 0);
+            bufferInsertNewLine(buf);
+          }
+        }
+        break;
+      case 'r':
+        if (pc.arg1 == 0) return;
+        if (pc.arg1 < 127) bufferReplaceSelection(buf, pc.arg1);
+        break;
       case 'v':
-        editorSwitchMode(editor.mode==VISUAL_LINE?VISUAL:VISUAL_LINE);
+        editor.mode = editor.mode==VISUAL_LINE?VISUAL:VISUAL_LINE;
         break;
       default:
         success=0;
@@ -370,6 +367,7 @@ void editorProcessCommand() {
 
     case 'G':
       buf->cursor.y = buf->row_size-1;
+      buf->cursor.x = clamp(buf->cursor.x, 0, buf->rows[buf->cursor.y].size-1);
       break;
     case 'J':
       bufferAbsoluteJump(buf, pc.repx);
@@ -412,6 +410,7 @@ void editorProcessCommand() {
 
 void editorCmdPromptProc(char *prompt) {
   char *cmd = editorPrompt(prompt ? prompt : "Enter command:", NULL);
+  if(!cmd) return;
 
   int _cl = strlen(cmd);
   int _cmdtype = CMD_NONE;
@@ -507,8 +506,10 @@ void editorInsertModeKeyProc(int c) {
 void editorSwitchMode(int mode) {
   if (mode == NORMAL)
     editor.statusmsg_time = 0;
-  else if (mode == VISUAL || mode == VISUAL_LINE)
-    editorUpdateSelection(0);
+  else if (mode == VISUAL || mode == VISUAL_LINE){
+    buffer *buf = editorGetCurrentBuffer();
+    bufferUpdateSelection(buf, mode, 0);
+  }
 
   if (editor.mode == INSERT)
     bufferMoveCursor(&editor.buf, ARROW_LEFT, mode, 1);

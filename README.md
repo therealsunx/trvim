@@ -99,11 +99,18 @@ _undergoing features are marked with .
         - = cursor range increase
         - = thin cursor
         - = arrow based movements
-    - . selection mode
+    - = visual/selection mode
+				- = visual mode : select character/word-wise
+				- = visual-line mode : select lines
         - = continous selection
         - = highlight selection
-        - . delete selection
-        - . replace selection
+        - = navigation : same as normal mode(but selects items along the way) except some special keybinds
+            - = Esc or Ctrl_C : switch to normal mode
+            - = o or O : move cursor to different end of selection
+            - = v : switch between visual and visual line mode
+        - = d or x : delete selection
+        - = c : cut selection (delete & switch to insert mode)
+        - = r{character} : replace selection with following character
 - . bufferize the editor
     - . multiple buffers
     - . buffer navigation

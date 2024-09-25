@@ -75,16 +75,16 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
     char c = row->renderchars[i];
     if(isSeparator(c) || i+1==row->size){
       if(in_str){
-        if(c == '"' || c == '\''){
+        if(c == in_str){
           in_str = 0;
-          memset(&row->hlchars[ci], TK_STRING, i-ci);
+          memset(&row->hlchars[ci], TK_STRING, i-ci+1);
           ci = i+1;
           continue;
         } else if(c == '\\') { // escape chars check
           int _esclen = 1;
           int _tp = NONE;
 
-          if(i+1 == row->rsize){ // @TODO: next line string
+          if(i+1 == row->rsize){
             memset(&row->hlchars[ci], TK_STRING, i-ci);
             memset(&row->hlchars[i], TK_PUNCTUATION, 1);
           }else{
@@ -154,7 +154,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
         break;
       } else if((syntax->flags & HL_STRING)
           && (c == '"' || c == '\'' )){
-        in_str++;
+        in_str = c;
         ci = i;
         continue;;
       } else if(c != ' '){
@@ -195,13 +195,6 @@ void rowInsertCharacter(erow *row, int index, int ch){
   rowUpdate(row);
 }
 
-void rowDeleteCharacter(erow *row, int index){
-  if(index < 0 || index >= row->size) return;
-  memmove(&row->chars[index], &row->chars[index+1], row->size-index);
-  row->size--;
-  rowUpdate(row);
-}
-
 int rowReplaceCharacter(erow *row, char ch_, int start, int len){
   len = clamp(len, 0, row->size-start);
   if(!len) return 0;
@@ -213,6 +206,14 @@ void rowFree(erow *row){
   free(row->chars);
   free(row->renderchars);
   free(row->hlchars);
+}
+
+void rowDeleteCharacters(erow *row, int start, int len){
+  if(start<0 || start >= row->size) return;
+  if(start+len >= row->size) len = row->size-start;
+  memmove(&row->chars[start], &row->chars[start+len], row->size-start-len+1);
+  row->size-=len;
+  rowUpdate(row);
 }
 
 void rowAppendString(erow *row, char *s, size_t len){

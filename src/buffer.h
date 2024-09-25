@@ -42,10 +42,15 @@ int bufferFindChar(buffer *buf, char char_, int dirflg);
 int bufferParaNav(buffer *buf, int dirflag);
 void bufferReplaceChar(buffer *buf, char char_, int repx);
 
+void bufferUpdateSelection(buffer *buf, int mode, int flags);
+void bufferSwapSelCursor(buffer *buf);
+void bufferDeleteSelection(buffer *buf);
+void bufferReplaceSelection(buffer *buf, char c);
+
 void bufferUpdateRow(buffer *buf, erow *row);
 void bufferInsertRow(buffer *buf, int index, char *s, size_t len);
 void bufferSwapRow(buffer *buf, int index1, int index2);
-void bufferDeleteRow(buffer *buf, int index);
+void bufferDeleteRows(buffer *buf, int index, int len);
 void bufferOpenFile(buffer *buf, char *filename);
 void bufferInsertChar(buffer* buf, int ch);
 void bufferInsertNewLine(buffer *buf);
