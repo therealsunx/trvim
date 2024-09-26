@@ -57,10 +57,11 @@ enum VISUAL_DIR {
 
 int getWindowSize(int *rows, int *cols);
 int getCursorPosition(int *x, int *y);
-void clearTerminal(void);
 void die(const char *s);
 
 int clamp(int value, int min, int max);
+int max(int a, int b);
+int min(int a, int b);
 int vec2areSame(vec2 v1, vec2 v2);
 
 int isSeparator(char c);
@@ -69,6 +70,13 @@ int isNumber(char *ch);
 
 int firstCharIndex(char *str);
 int countTabs(char *str);
+
 void showCursor(int x, int y);
+void moveCursor(int y, int x);
+void hideCursor(void);
+void resetCursor(void);
+void thinCursor(void);
+void thickCursor(void);
 
 int checkPoint(boundstype bounds, vec2 point);
+void clearTerminal(void);

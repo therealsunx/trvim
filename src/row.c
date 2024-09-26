@@ -6,7 +6,7 @@
 #include "highlight.h"
 #include "utils.h"
 
-extern settingsType settings;
+extern settings_t settings;
 
 void rowUpdate(erow *row){
   //count tabs

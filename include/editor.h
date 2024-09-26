@@ -1,17 +1,15 @@
 #include <termios.h>
-#include <time.h>
 
-#include "abuf.h"
 #include "buffer.h"
 #include "cmdstack.h"
+#include "window.h"
+#include "cmdbar.h"
 
 typedef struct {
-  buffer buf;
-  vec2 screen_size;
-  char statusmsg[64];
-  time_t statusmsg_time;
+  window_t window;
+  cmdbar_t cmdbar;
+  cmdstack_t cmdstk;
   int mode;
-  cmdstack cmdstk;
 } editorconf;
 
 // --editor init functions --
@@ -20,35 +18,20 @@ void enableRawMode(void);
 void initEditor(void);
 void freeEditor(void);
 
-// -- editor prcs --
-int editorCheckSizeUpdate(void);
-void editorDrawBuffers(abuf *appendbuffer);
-void editorShowCursor(void);
-void editorDrawStsMsgBar(abuf *ab);
 void editorSetStatusMsg(const char *fmt, ...);
 void editorStatusBarUpdate(void);
-buffer *editorGetCurrentBuffer(void);
-
 void editorRefreshScreen(void);
 int editorReadKey(void);
+buffer_t *editorGetCurrentBuffer(void);
 void editorProcessKeyPress(void);
 void editorNormalModeKeyProc(int key);
 void editorInsertModeKeyProc(int key);
-void editorSwitchMode(int mode);
-void editorUpdateSelection(int flags);
-
-void editorPageScroll(int key);
-void editorScroll(void);
-
-void editorOpen(char* filename);
-
 void editorProcessCommand(void);
 void editorCmdPromptProc(char *prompt);
 void editorSaveQuitBuffers(int flags);
-
-// -- editor operations --
-void editorSaveBuffer(buffer *buf);
+void editorSwitchMode(int mode);
+void editorSaveBuffer(buffer_t *buf);
+void editorOpen(char* filename);
 char *editorPrompt(char *query, void (*callback)(char*, int));
-
 void editorFind(char *prompt);
 

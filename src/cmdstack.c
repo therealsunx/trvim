@@ -3,27 +3,27 @@
 #include "cmdstack.h"
 #include "utils.h"
 
-void initStack(cmdstack *stk){
+void initStack(cmdstack_t *stk){
   stk->_size=4;
   stk->vals = malloc(stk->_size * sizeof(int));
   stk->top = 0;
 }
 
-void freeStack(cmdstack *stk){
+void freeStack(cmdstack_t *stk){
   free(stk->vals);
   stk->_size = 0;
   stk->top = 0;
 }
 
-void emptyStack(cmdstack *stk){
+void emptyStack(cmdstack_t *stk){
   stk->top = 0;
 }
 
-int isStackEmpty(cmdstack *stk){
+int isStackEmpty(cmdstack_t *stk){
   return stk->top == 0;
 }
 
-void push(cmdstack *stk, int value){
+void push(cmdstack_t *stk, int value){
   if(stk->top == stk->_size){
     stk->_size *= 2;
     stk->vals = realloc(stk->vals, stk->_size);
@@ -31,15 +31,15 @@ void push(cmdstack *stk, int value){
   stk->vals[stk->top++] = value;
 }
 
-int pop(cmdstack *stk){
+int pop(cmdstack_t *stk){
   if(stk->top == 0){
-    die("cmdstack underflow");
+    die("cmdstack_t underflow");
     return -1;
   }
   return stk->vals[--stk->top];
 }
 
-int getNumber(cmdstack *stk){
+int getNumber(cmdstack_t *stk){
   int n = 0;
   for(int i=0; i<stk->top; i++){
     int c = stk->vals[i];
@@ -49,7 +49,7 @@ int getNumber(cmdstack *stk){
   return n;
 }
 
-parsedcmd_t parseCommand(cmdstack *stk){
+parsedcmd_t parseCommand(cmdstack_t *stk){
   parsedcmd_t pc = {0,0,0,0};
 
   int i=0, c=0;
