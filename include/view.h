@@ -37,7 +37,7 @@ int viewMasterKeys(view_t *view, int key, int mode);
 // in normal mode
 int viewMvmtCmdHandle(view_t *view, int key, int times, int mode);
 int viewInsCmdHandle(view_t *view, int key);
-int viewVisCmdHandle(int key);
+int viewVisCmdHandle(view_t *view, int key);
 int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd);
 
 // in insert mode
@@ -59,4 +59,5 @@ void _pageMvmnt(view_t *view, int key);
 void _absJmp(view_t *view, int line);
 void _inlineMvmt(view_t *view, int key, int times);
 void _wrdJmp(view_t *view, int flags, int times);
+void _miscJmp(view_t *view, int key);
 

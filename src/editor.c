@@ -65,10 +65,9 @@ void editorSetStatusMsg(const char *fmt, ...) {
 }
 
 void editorStatusBarUpdate(void) {
+  if (editor.mode == NORMAL) return;
   editor.cmdbar.msg_t = time(NULL);
-  if (editor.mode == NORMAL)
-    editorSetStatusMsg("-- NORMAL --");
-  else if (editor.mode == INSERT)
+  if (editor.mode == INSERT)
     editorSetStatusMsg("-- INSERT --");
   else if (editor.mode == VISUAL)
     editorSetStatusMsg("-- VISUAL --");
@@ -87,6 +86,9 @@ void editorRefreshScreen(void) {
 
 buffer_t *editorGetCurrentBuffer(void) {
   return windowGetCurBuffer(&editor.window);
+}
+view_t *editorGetCurrentView(void){
+  return windowGetCurView(&editor.window);
 }
 
 void _editorSzUpdtcb(void) {
@@ -175,8 +177,14 @@ void editorProcessKeyPress(void) {
   if (!pc.repx) pc.repx++;
 
   if (editor.mode == VISUAL || editor.mode == VISUAL_LINE) {
-    cmd_st = viewBack2Normal(view, c, editor.mode)
-      || viewVisualOp(view, &pc);
+    cmd_st = viewBack2Normal(view, c, editor.mode);
+    if(cmd_st != ST_NOOP){
+      editorSwitchMode(NORMAL);
+      emptyStack(&editor.cmdstk);
+      return;
+    }
+
+    cmd_st = viewVisualOp(view, &pc);
     if(cmd_st != ST_NOOP) {
       emptyStack(&editor.cmdstk);
       return;
@@ -190,14 +198,19 @@ void editorProcessKeyPress(void) {
       emptyStack(&editor.cmdstk);
       return;
     }
-    cmd_st = viewVisCmdHandle(pc.cmd);
+    cmd_st = viewVisCmdHandle(view, pc.cmd);
     if(cmd_st){
       emptyStack(&editor.cmdstk);
       editorSwitchMode(cmd_st);
+      return;
     }
-    cmd_st = viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode)
-      || viewMiscCmdHandle(view, &pc);
-    if (cmd_st != ST_NOOP) {
+    cmd_st = viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode);
+    if(cmd_st != ST_NOOP){
+      emptyStack(&editor.cmdstk);
+      return;
+    }
+    cmd_st = viewMiscCmdHandle(view, &pc);
+    if (cmd_st != ST_WAIT) {
       emptyStack(&editor.cmdstk);
       return;
     }
@@ -436,8 +449,7 @@ void editorProcessCommand(void) {
 
 void editorCmdPromptProc(char *prompt) {
   char *cmd = editorPrompt(prompt ? prompt : "Enter command:", NULL);
-  if (!cmd)
-    return;
+  if (!cmd) return;
 
   int _cl = strlen(cmd);
   int _cmdtype = CMD_NONE;
@@ -447,8 +459,7 @@ void editorCmdPromptProc(char *prompt) {
     if (cmd[i] >= '0' && cmd[i] <= '9') {
       _cmdtype = CMD_NUM;
       val = val * 10 + cmd[i] - '0';
-    } else
-      break;
+    } else break;
     i++;
   }
 
@@ -457,43 +468,42 @@ void editorCmdPromptProc(char *prompt) {
     return;
   }
   if (editor.mode == VISUAL_LINE || editor.mode == VISUAL) {
-    editorSetStatusMsg("\x1b[91m Not an command during vis. mode: %s\x1b[0m",
-                       cmd);
+    editorSetStatusMsg("\x1b[91m Not an command during vis. mode: %s\x1b[0m", cmd);
     return;
   }
 
   while (i < _cl) {
     if (cmd[i] == 'w') {
-      if (_cmdtype & (CMD_WRITE | CMD_QUIT | CMD_ALL | CMD_QUIT)) {
-        _cmdtype = CMD_ERROR;
+      if (_cmdtype & (CMD_WRITE | CMD_QUIT | CMD_ALL | CMD_FORCE)) {
+        _cmdtype |= CMD_ERROR;
         break;
       }
       _cmdtype |= CMD_WRITE;
     } else if (cmd[i] == 'q') {
-      if (_cmdtype & (CMD_QUIT | CMD_ALL | CMD_QUIT)) {
-        _cmdtype = CMD_ERROR;
+      if (_cmdtype & (CMD_QUIT | CMD_ALL | CMD_FORCE)) {
+        _cmdtype |= CMD_ERROR;
         break;
       }
       _cmdtype |= CMD_QUIT;
     } else if (cmd[i] == 'a') {
-      if (_cmdtype & (CMD_ALL | CMD_QUIT)) {
-        _cmdtype = CMD_ERROR;
+      if (_cmdtype & (CMD_ALL | CMD_FORCE)) {
+        _cmdtype |= CMD_ERROR;
         break;
       }
       _cmdtype |= CMD_ALL;
     } else if (cmd[i] == '!') {
-      if (!(_cmdtype & CMD_QUIT)) {
-        _cmdtype = CMD_ERROR;
+      if (_cmdtype & CMD_FORCE) {
+        _cmdtype |= CMD_ERROR;
         break;
       }
       _cmdtype |= CMD_FORCE;
     } else {
-      _cmdtype = CMD_ERROR;
+      _cmdtype |= CMD_ERROR;
       break;
     }
     i++;
   }
-  if (_cmdtype == CMD_ERROR) {
+  if (_cmdtype&CMD_ERROR) {
     editorSetStatusMsg("\x1b[91m Not an editor Command: %s\x1b[0m", cmd);
     return;
   }
@@ -535,14 +545,6 @@ void editorInsertModeKeyProc(int c) {
 
 void editorSwitchMode(int mode) {
   if (mode == NORMAL) editor.cmdbar.msg_t = 0;
-  else if (mode == VISUAL || mode == VISUAL_LINE) {
-    view_t *view = windowGetCurView(&editor.window);
-    viewUpdateSelection(view, editor.mode, 0);
-  }
-
-  // TODO : check it out later
-  // if (editor.mode == INSERT)
-  //  bufferMoveCursor(&editor.buf, ARROW_LEFT, mode, 1);
   editor.mode = mode;
 }
 
@@ -556,7 +558,6 @@ void editorSaveBuffer(buffer_t *buf) {
       return;
     }
   }
-
   int _sz = bufferSave(buf);
   if (_sz == -1)
     editorSetStatusMsg("Save Failed I/O error: %s", strerror(errno));
@@ -586,9 +587,11 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
   size_t buflen = 0;
   buf[buflen] = '\0';
 
+  emptyStack(&editor.cmdstk);
   while (1) {
     editorSetStatusMsg(prompt, buf);
     editorRefreshScreen();
+    // NOTE : if I ever implement cmdbar as buffer, then look at this
     showCursor(editor.window.size.y - CMDBAR_SZ, strlen(editor.cmdbar.msg));
 
     int c = editorReadKey();
@@ -624,8 +627,8 @@ void editorFindCallback(char *query, int key) {
   static int _st_hlind;
   static unsigned char *_st_hl = NULL;
 
-  buffer_t *_cbuf = editorGetCurrentBuffer();
-  view_t *view = windowGetCurView(&editor.window);
+  view_t *view = editorGetCurrentView();
+  buffer_t *_cbuf = view->buf;
 
   if (_st_hl) {
     memcpy(_cbuf->rows[_st_hlind].hlchars, _st_hl,
@@ -644,7 +647,7 @@ void editorFindCallback(char *query, int key) {
   else if (key == ARROW_DOWN)
     dir = 1;
 
-  if (bufferFind(_cbuf, query, &view->cursor, dir) == 0) {
+  if (bufferFind(_cbuf, query, &view->cursor, dir)) {
     // save state for reverting later
     _st_hlind = view->cursor.y;
     erow *row = &_cbuf->rows[_st_hlind];
@@ -658,7 +661,7 @@ void editorFindCallback(char *query, int key) {
 }
 
 void editorFind(char *prompt) {
-  view_t *view = windowGetCurView(&editor.window);
+  view_t *view = editorGetCurrentView();
   vec2 _st_cur = view->cursor;
   vec2 _st_off = view->offset;
 

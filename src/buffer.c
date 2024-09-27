@@ -348,11 +348,11 @@ int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg){
   return 0;
 }
 
-int bufferParaNav(buffer_t *buf, vec2 *cursor, int dirflag){
+int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag){
   int dir = dirflag&JMP_BACK?-1:1;
   int y=cursor->y+dir;
   for(; y>0 && y<buf->row_size;y+=dir){
-    if(buf->rows[y].size == 0){
+    if(buf->rows[y].size == 0 && !(--times)){
       cursor->x=0;
       cursor->y=y;
       return 1;
@@ -552,9 +552,9 @@ int bufferSave(buffer_t *buf) {
 }
 
 int bufferFind(buffer_t *buf, char *query, vec2 *cursor, int dir) {
+  if(!query || !strlen(query)) return 0;
   int _d = dir == 0 ? 1 : dir;
   for (int i = 0, crs = cursor->y; i <= buf->row_size; i++, crs += _d) {
-
     if (crs == -1)
       crs += buf->row_size;
     else if (crs == buf->row_size)
@@ -575,10 +575,10 @@ int bufferFind(buffer_t *buf, char *query, vec2 *cursor, int dir) {
 
       cursor->y = crs;
       cursor->x = _cx;
-      return 0;
+      return 1;
     }
   }
-  return -1;
+  return 0;
 }
 
 void bufferSelectSyntax(buffer_t *buf) {

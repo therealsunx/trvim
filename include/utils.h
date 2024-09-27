@@ -35,13 +35,13 @@ enum JUMP_FLAGS {
 };
 
 enum CMD_TYPES {
-  CMD_NONE = 0x0,
-  CMD_NUM = 0x1,
-  CMD_WRITE = 0x2,
-  CMD_QUIT = 0x4,
-  CMD_ALL = 0x8,
-  CMD_FORCE = 0x10,
-  CMD_ERROR = 0x20,
+  CMD_NONE = 0,
+  CMD_NUM = 1<<0,
+  CMD_WRITE = 1<<1,
+  CMD_QUIT = 1<<2,
+  CMD_ALL = 1<<3,
+  CMD_FORCE = 1<<4,
+  CMD_ERROR = 1<<5,
 };
 
 enum BOUND_STATE {

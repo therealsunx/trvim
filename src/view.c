@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "editor.h"
 #include "view.h"
 #include "keybinds.h"
 #include "settings.h"
@@ -12,10 +13,6 @@ void update(view_t *view) {
   view->lcols = SIGNCOL_SZ + LCOL_GAP + 1; // 1 minimum char
   while ((_sz /= 10))
     view->lcols++;
-
-  // buffer should not have size for draw.. all handled by view
-  // view->buf->size.x = view->size.x-view->lcols;
-  // view->buf->size.y = view->size.y-STATUSBAR_SZ;
 }
 
 void initView(view_t *view, buffer_t *buf, vec2 size, vec2 position) {
@@ -141,10 +138,7 @@ void viewDraw(view_t *view, int selflag) {
         abAppend(&ab, &ch[i], 1);
       }
     }
-
     abAppend(&ab, "\x1b[m", 3);
-    //abAppend(&ab, "\x1b[m\x1b[K", 6); // clear the line before drawing
-    //abAppend(&ab, "\r\n", 2);
   }
   _drawStatusBar(view, &ab);
   writeBuf(&ab);
@@ -246,6 +240,11 @@ int viewMvmtCmdHandle(view_t *view, int key, int times, int mode){
     case 'B':
       _wrdJmp(view, JMP_BACK|JMP_PUNC, times);
       return ST_SUCCESS;
+    case 'G':
+    case 'H':
+    case 'L':
+      _miscJmp(view, key);
+      return ST_SUCCESS;
   }
   return ST_NOOP;
 }
@@ -286,33 +285,47 @@ int viewInsCmdHandle(view_t *view, int key){
   return ST_SUCCESS;
 }
 
-int viewVisCmdHandle(int key){
+int viewVisCmdHandle(view_t *view, int key){
   switch(key){
-    case 'v': return VISUAL;
-    case 'V': return VISUAL_LINE;
+    case 'v': 
+      viewUpdateSelection(view, VISUAL, 0);
+      return VISUAL;
+    case 'V':
+      viewUpdateSelection(view, VISUAL_LINE, 0);
+      return VISUAL_LINE;
   }
   return 0;
 }
 
 int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
-  /*
-   * editorFind on /
-   * editorCmdPromptProc on :
-   * find char on f F
-   * buffer para nav on { }
-   * jumps : w W b B e E
-   * G : eof
-   * J : absolute jump
-   * H : page start
-   * L : page end
-   * */
   switch(cmd->cmd){
     case 'r':
       if (cmd->arg1 == 0) return ST_WAIT;
       if (cmd->arg1 >= 127) return ST_ERR;
       bufferReplaceChar(view->buf, &view->cursor, cmd->arg1, cmd->repx);
       return ST_SUCCESS;
-
+    case 'f':
+    case 'F':
+      {
+        if(cmd->arg1 == 0) return ST_WAIT;
+        if (cmd->arg1 >= 127) return ST_ERR;
+        int flg = cmd->cmd=='F'?JMP_BACK:0;
+        while(cmd->repx--
+            && bufferFindChar(view->buf, &view->cursor, cmd->arg1, flg)){}
+        return ST_SUCCESS;
+      }
+    case '{':
+      bufferParaNav(view->buf, &view->cursor, cmd->repx, JMP_BACK);
+      return ST_SUCCESS;
+    case '}':
+      bufferParaNav(view->buf, &view->cursor, cmd->repx, 0);
+      return ST_SUCCESS;
+    case '/':
+      editorFind("/%s");
+      return ST_SUCCESS;
+    case ':':
+      editorCmdPromptProc(":%s");
+      return ST_SUCCESS;
   }
   return ST_ERR; // IMPORTANT ERR: else garbage buffer
 }
@@ -384,12 +397,11 @@ void _drawStatusBar(view_t *view, abuf *ab){
   int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", view->cursor.y,
                       view->buf->row_size, view->cursor.x);
 
-  abAppend(ab, lstatus, len);
+abAppend(ab, lstatus, len);
   for (; len < view->size.x - rlen; len++)
     abAppend(ab, " ", 1);
   abAppend(ab, rstatus, rlen);
   abAppend(ab, "\x1b[m", 3);
-  //abAppend(ab, "\r\n", 2);
 }
 
 void _addWelcomeMsg(view_t *view, abuf *ab) {
@@ -465,3 +477,19 @@ void _wrdJmp(view_t *view, int flags, int times){
   view->st.cursx = view->cursor.x;
 }
 
+void _miscJmp(view_t *view, int key){
+  if(!view->buf || !view->buf->row_size) return;
+  switch(key){
+    case 'G':
+      view->cursor.y = view->buf->row_size-1;
+      break;
+    case 'H':
+      view->cursor.y = settings.scrollpadding + view->offset.y;
+      break;
+    case 'L':
+      view->cursor.y = view->offset.y+view->size.y
+        -settings.scrollpadding-STATUSBAR_SZ;
+      break;      
+  }
+  view->cursor.y = clamp(view->cursor.y, 0, view->buf->row_size-1);
+}

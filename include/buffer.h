@@ -29,7 +29,7 @@ void bufferScroll(buffer_t *buf);
 
 int bufferWordJump(buffer_t *buf, vec2 *cursor, int flags);
 int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg);
-int bufferParaNav(buffer_t *buf, vec2 *cursor, int dirflag);
+int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag);
 void bufferReplaceChar(buffer_t *buf, vec2 *cursor, char char_, int repx);
 
 void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags);

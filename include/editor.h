@@ -23,6 +23,7 @@ void editorStatusBarUpdate(void);
 void editorRefreshScreen(void);
 int editorReadKey(void);
 buffer_t *editorGetCurrentBuffer(void);
+view_t *editorGetCurrentView(void);
 void editorProcessKeyPress(void);
 void editorNormalModeKeyProc(int key);
 void editorInsertModeKeyProc(int key);
