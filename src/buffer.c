@@ -8,66 +8,30 @@
 #include <unistd.h>
 
 #include "buffer.h"
-#include "keybinds.h"
 #include "settings.h"
 
-extern settingsType settings;
+extern settings_t settings;
 extern syntaxhl HLDB[];
 extern int HLDB_SIZE;
 
-void initBuffer(buffer *buf) {
-  *buf = (buffer){
-      .cursor = DEF_VEC2,
-      .offset = DEF_VEC2,
-      .view_size = DEF_VEC2,
-      .size = DEF_VEC2,
+void initBuffer(buffer_t *buf) {
+  *buf = (buffer_t){
       .row_size = 0,
-      .render_x = 0,
-      .linenumcol_sz = 1,
       .dirty = 0,
       .rows = NULL,
       .filename = NULL,
-      .st = DEF_STATE,
       .syntax = NULL,
       .selection = {DEF_VEC2, DEF_VEC2, FORWARD},
   };
 }
 
-void freeBuffer(buffer *buf){
-  for(int i=0; i<buf->row_size; i++){
-    free(buf->rows[i].chars);
-  }
+void freeBuffer(buffer_t *buf){
+  for(int i=0; i<buf->row_size; i++) rowFree(&buf->rows[i]);
   free(buf->filename);
 }
 
-void bufferUpdateLineColSz(buffer *buf){
-  int _sz = buf->row_size;
-  buf->linenumcol_sz = 3; // one bar, one space and at least one char
-  while ((_sz /= 10))
-    buf->linenumcol_sz++;
-  buf->size.x = buf->view_size.x-buf->linenumcol_sz;
-}
-
-void bufferUpdateSize(buffer *buf, int sx, int sy) {
-  buf->view_size.y = sy;
-  buf->view_size.x = sx;
-  buf->size.y = sy;
-  bufferUpdateLineColSz(buf);
-}
-
-void addWelcomeMsg(buffer *buf, abuf *ab) {
-  char wlc[80];
-  int wlclen =
-      snprintf(wlc, sizeof(wlc), "therealtxt editor v%s", EDITOR_VERSION);
-  if (wlclen > buf->view_size.x)
-    wlclen = buf->view_size.x;
-
-  int padding = (buf->view_size.x - wlclen) / 2;
-  while (padding--) abAppend(ab, " ", 1);
-  abAppend(ab, wlc, wlclen);
-}
-
-void addColumn(buffer *buf, abuf *ab, int linenum){
+/*
+void addColumn(buffer_t *buf, abuf *ab, int linenum){
   char _lstr[32];
   int val = linenum+1, len;
 
@@ -89,7 +53,7 @@ void addColumn(buffer *buf, abuf *ab, int linenum){
   abAppend(ab, "\x1b[m", 3);
 }
 
-void bufferDrawRows(buffer *buf, abuf *ab, int selflag) {
+void bufferDrawRows(buffer_t *buf, abuf *ab, int selflag) {
   vec2 sstate = {BEFORE, BEFORE}; // for selection mode
   boundstype sel = buf->selection;
   if(selflag){
@@ -176,93 +140,8 @@ void bufferDrawRows(buffer *buf, abuf *ab, int selflag) {
   }
 }
 
-void bufferUpdateSelection(buffer *buf, int mode, int flags){
-  if(!flags){
-    buf->selection.start = buf->cursor;
-    buf->selection.end = buf->cursor;
-    buf->selection.dir = FORWARD;
-  } else {
-    int cst = checkPoint(buf->selection, buf->cursor);
-    if(buf->selection.dir == FORWARD){
-      if(cst == BEFORE){
-        buf->selection.dir = BACKWARD;
-        buf->selection.end = buf->selection.start;
-        buf->selection.start = buf->cursor;
-      }else buf->selection.end = buf->cursor;
-    } else if(buf->selection.dir == BACKWARD){
-      if(cst == AFTER){
-        buf->selection.dir = FORWARD;
-        buf->selection.start = buf->selection.end;
-        buf->selection.end = buf->cursor;
-      } else buf->selection.start = buf->cursor;
-    }
-  }
 
-  if(mode == VISUAL_LINE){
-    buf->selection.start.x = 0;
-    buf->selection.end.x = buf->rows[buf->selection.end.y].size-1;
-  }
-}
-
-void bufferSwapSelCursor(buffer *buf){
-  if(buf->selection.dir == FORWARD){
-    buf->cursor = buf->selection.start;
-    buf->selection.dir = BACKWARD;
-  }else{
-    buf->cursor = buf->selection.end;
-    buf->selection.dir = FORWARD;
-  }
-}
-
-void bufferDeleteSelection(buffer *buf){
-  // delete from last to first to avoid memory misplace issues
-  int y = buf->selection.end.y, x;
-  erow *row;
-  for(;y>=buf->selection.start.y; y--){
-    row = &buf->rows[y];
-    if(y == buf->selection.end.y){
-      x = y == buf->selection.start.y?buf->selection.start.x:0;
-      rowDeleteCharacters(row, x, buf->selection.end.x-x+1);
-      if(row->size == 0) bufferDeleteRows(buf, y, 1);
-      else bufferUpdateRow(buf, row);
-    } else if (y == buf->selection.start.y){
-      x = buf->selection.start.x;
-      rowDeleteCharacters(row, x, row->size-x+1);
-      if(row->size == 0) bufferDeleteRows(buf, y, 1);
-      else bufferUpdateRow(buf, row);
-    } else {
-      bufferDeleteRows(buf, y, 1);
-    }
-  }
-  buf->cursor = buf->selection.start;
-  if(buf->cursor.y>=buf->row_size){
-    buf->cursor.y = buf->row_size-1;
-    buf->cursor.x = buf->rows[buf->cursor.y].size-1;
-  } else buf->cursor.x = clamp(buf->cursor.x, 0, buf->rows[buf->cursor.y].size-1);
-  buf->st.cursx = buf->cursor.x;
-}
-
-void bufferReplaceSelection(buffer *buf, char c){
-  int y = buf->selection.end.y, x;
-  erow *row;
-  for(;y>=buf->selection.start.y; y--){
-    row = &buf->rows[y];
-    if(y == buf->selection.end.y){
-      x = y == buf->selection.start.y?buf->selection.start.x:0;
-      rowReplaceCharacter(row, c, x, buf->selection.end.x-x+1);
-      bufferUpdateRow(buf, row);
-    } else if (y == buf->selection.start.y){
-      x = buf->selection.start.x;
-      rowReplaceCharacter(row, c, x, row->size-x+1);
-      bufferUpdateRow(buf, row);
-    } else {
-      rowReplaceCharacter(row, c, 0, row->size);
-      bufferUpdateRow(buf, row);
-    }
-  }
-}
-
-void bufferDrawStatusBar(buffer *buf, abuf *ab) {
+void bufferDrawStatusBar(buffer_t *buf, abuf *ab) {
   abAppend(ab, "\x1b[48;5;237m", 11);
 
   char lstatus[80], rstatus[80];
@@ -285,63 +164,13 @@ void bufferDrawStatusBar(buffer *buf, abuf *ab) {
   abAppend(ab, "\x1b[m", 3);
 }
 
-void bufferShowCursor(buffer *buf) {
+void bufferShowCursor(buffer_t *buf) {
   showCursor(
       buf->cursor.y - buf->offset.y + 1,
       buf->render_x - buf->offset.x + buf->linenumcol_sz + 1);
 }
 
-void bufferMoveCursor(buffer *buf, int key, int mode, int repx) {
-  if(buf->cursor.y>=buf->row_size) buf->cursor.y = buf->row_size-1;
-  erow *row = &buf->rows[buf->cursor.y];
-
-  int _rsz = row->size;
-  if(mode != INSERT) _rsz--;
-
-  switch (key) {
-    case 'h':
-    case ARROW_LEFT:
-      buf->cursor.x -= repx;
-      if(buf->cursor.x<0) buf->cursor.x=0;
-      buf->st.cursx = buf->cursor.x;
-      return;
-    case 'l':
-    case ARROW_RIGHT:
-      buf->cursor.x += repx;
-      if(buf->cursor.x>_rsz) buf->cursor.x=_rsz;
-      buf->st.cursx = buf->cursor.x;
-      return;
-    case 'k':
-    case ARROW_UP:
-      buf->cursor.y -= repx;
-      if(buf->cursor.y<0) buf->cursor.y=0;
-      break;
-    case 'j':
-    case ARROW_DOWN:
-      buf->cursor.y += repx;
-      if(buf->cursor.y>=buf->row_size) buf->cursor.y=buf->row_size-1;
-      break;
-  }
-
-  // cursor state preservation
-  if (buf->cursor.y < buf->row_size) {
-    row = &buf->rows[buf->cursor.y];
-    _rsz = row->size;
-    if(mode != INSERT) _rsz--;
-
-    buf->cursor.x = buf->st.cursx;
-    if (buf->cursor.x >= row->size)
-      buf->cursor.x = row->size == 0 ? 0 : _rsz;
-  }
-}
-
-void bufferAbsoluteJump(buffer *buf, int line){
-  line--;
-  buf->cursor.y = clamp(line, 0, buf->row_size-1);
-  buf->cursor.x = clamp(buf->st.cursx, 0, buf->rows[buf->cursor.y].size-1);
-}
-
-void bufferScroll(buffer *buf) {
+void bufferScroll(buffer_t *buf) {
   int _cy = buf->cursor.y - buf->offset.y;
 
   // vertical scroll handler
@@ -364,20 +193,95 @@ void bufferScroll(buffer *buf) {
   else if (_cx < 0)
     buf->offset.x = buf->render_x;
 }
+*/
 
-void bufferGotoEnd(buffer* buf, int mode, int posflg){
-  if(posflg&JMP_BACK) buf->cursor.x=0;
-  else{
-    if(buf->cursor.y>=buf->row_size) buf->cursor.y = buf->row_size-1;
-    buf->cursor.x = buf->rows[buf->cursor.y].size;
-    if(mode != INSERT) buf->cursor.x--;
+void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags){
+  if(!flags){
+    buf->selection.start = cursor;
+    buf->selection.end = cursor;
+    buf->selection.dir = FORWARD;
+  } else {
+    int cst = checkPoint(buf->selection, cursor);
+    if(buf->selection.dir == FORWARD){
+      if(cst == BEFORE){
+        buf->selection.dir = BACKWARD;
+        buf->selection.end = buf->selection.start;
+        buf->selection.start = cursor;
+      }else buf->selection.end = cursor;
+    } else if(buf->selection.dir == BACKWARD){
+      if(cst == AFTER){
+        buf->selection.dir = FORWARD;
+        buf->selection.start = buf->selection.end;
+        buf->selection.end = cursor;
+      } else buf->selection.start = cursor;
+    }
   }
-  buf->st.cursx = buf->cursor.x;
+  if(mode == VISUAL_LINE){
+    buf->selection.start.x = 0;
+    buf->selection.end.x = buf->rows[buf->selection.end.y].size-1;
+  }
 }
 
-int bufferWordJump(buffer *buf, int flags){
+void bufferSwapSelCursor(buffer_t *buf, vec2 *cursor){
+  if(buf->selection.dir == FORWARD){
+    *cursor = buf->selection.start;
+    buf->selection.dir = BACKWARD;
+  }else{
+    *cursor = buf->selection.end;
+    buf->selection.dir = FORWARD;
+  }
+}
+
+void bufferDeleteSelection(buffer_t *buf, vec2 *cursor){
+  // delete from last to first to avoid memory misplace issues
+  int y = buf->selection.end.y, x;
+  erow *row;
+  for(;y>=buf->selection.start.y; y--){
+    row = &buf->rows[y];
+    if(y == buf->selection.end.y){
+      x = y == buf->selection.start.y?buf->selection.start.x:0;
+      rowDeleteCharacters(row, x, buf->selection.end.x-x+1);
+      if(row->size == 0) bufferDeleteRows(buf, y, 1);
+      else bufferUpdateRow(buf, row);
+    } else if (y == buf->selection.start.y){
+      x = buf->selection.start.x;
+      rowDeleteCharacters(row, x, row->size-x+1);
+      if(row->size == 0) bufferDeleteRows(buf, y, 1);
+      else bufferUpdateRow(buf, row);
+    } else {
+      bufferDeleteRows(buf, y, 1);
+    }
+  }
+  *cursor = buf->selection.start;
+  if(cursor->y>=buf->row_size){
+    cursor->y = buf->row_size-1;
+    cursor->x = buf->rows[cursor->y].size-1;
+  } else cursor->x = clamp(cursor->x, 0, buf->rows[cursor->y].size-1);
+}
+
+void bufferReplaceSelection(buffer_t *buf, char c){
+  int y = buf->selection.end.y, x;
+  erow *row;
+  for(;y>=buf->selection.start.y; y--){
+    row = &buf->rows[y];
+    if(y == buf->selection.end.y){
+      x = y == buf->selection.start.y?buf->selection.start.x:0;
+      rowReplaceCharacter(row, c, x, buf->selection.end.x-x+1);
+      bufferUpdateRow(buf, row);
+    } else if (y == buf->selection.start.y){
+      x = buf->selection.start.x;
+      rowReplaceCharacter(row, c, x, row->size-x+1);
+      bufferUpdateRow(buf, row);
+    } else {
+      rowReplaceCharacter(row, c, 0, row->size);
+      bufferUpdateRow(buf, row);
+    }
+  }
+}
+
+int bufferWordJump(buffer_t *buf, vec2 *cursor, int flags){
   int dir = flags & JMP_BACK? -1: 1;
-  vec2 crs = buf->cursor, lnsp = buf->cursor;
+  vec2 crs = *cursor, lnsp = *cursor;
 
   int _fnd = 0;
   int _lj = 0;
@@ -391,26 +295,26 @@ int bufferWordJump(buffer *buf, int flags){
 
       if(flags&JMP_END){
         if(_sep){
-          if(!vec2areSame(lnsp, buf->cursor)) {
+          if(!vec2areSame(lnsp, *cursor)) {
             crs = lnsp;
             _fnd++;
             break;
-          } else if(c != ' ' && !vec2areSame(crs, buf->cursor)) {
+          } else if(c != ' ' && !vec2areSame(crs, *cursor)) {
             _fnd++;
             break;
           } } else lnsp = crs;
       } else {
         if(_sep) _fnd++;
-        if((_lj || _fnd) && c != ' ' && !vec2areSame(buf->cursor, crs)) break;
+        if((_lj || _fnd) && c != ' ' && !vec2areSame(*cursor, crs)) break;
       }
 
       crs.x += dir;
     }
     crs.x = clamp(crs.x, 0, row->size-1);
 
-    if(_lj || (_fnd && !vec2areSame(buf->cursor, crs))) break;
+    if(_lj || (_fnd && !vec2areSame(*cursor, crs))) break;
     else _lj++;
-    if((flags&JMP_END) && !vec2areSame(crs, buf->cursor)) break;
+    if((flags&JMP_END) && !vec2areSame(crs, *cursor)) break;
 
     crs.y += dir;
   }
@@ -421,14 +325,13 @@ int bufferWordJump(buffer *buf, int flags){
   else _nomore = 0;
 
   crs.x = clamp(crs.x, 0, buf->rows[crs.y].size-1);
-  buf->cursor = crs;
-  buf->st.cursx = crs.x;
+  *cursor = crs;
   return !_nomore;
 }
 
-int bufferFindChar(buffer *buf, char char_, int dirflg){
+int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg){
   int dir = dirflg&JMP_BACK?-1:1;
-  vec2 crs = buf->cursor;
+  vec2 crs = *cursor;
   if(crs.y<0 || crs.y>=buf->row_size) return 0;
 
   erow *row = &buf->rows[crs.y];
@@ -438,54 +341,41 @@ int bufferFindChar(buffer *buf, char char_, int dirflg){
   for(;crs.x<row->size && crs.x>=0; crs.x+=dir){
     c = row->chars[crs.x];
     if(c == char_){
-      buf->cursor = crs;
+      *cursor = crs;
       return 1;
     }
   }
   return 0;
 }
 
-int bufferParaNav(buffer *buf, int dirflag){
+int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag){
   int dir = dirflag&JMP_BACK?-1:1;
-  int y=buf->cursor.y+dir;
+  int y=cursor->y+dir;
   for(; y>0 && y<buf->row_size;y+=dir){
-    if(buf->rows[y].size == 0){
-      buf->cursor.x=0;
-      buf->cursor.y=y;
+    if(buf->rows[y].size == 0 && !(--times)){
+      cursor->x=0;
+      cursor->y=y;
       return 1;
     }
   }
-  buf->cursor.y = clamp(y, 0, buf->row_size-1);
-  buf->cursor.x = dir>0?(buf->rows[buf->cursor.y].size-1):0;
+  cursor->y = clamp(y, 0, buf->row_size-1);
+  cursor->x = dir>0?(buf->rows[cursor->y].size-1):0;
   return 0;
 }
 
-void bufferReplaceChar(buffer *buf, char char_, int repx){
-  if(buf->cursor.y<0 || buf->cursor.y>=buf->row_size) return;
-  erow *row = &buf->rows[buf->cursor.y];
-  if(rowReplaceCharacter(row, char_, buf->cursor.x, repx))
+void bufferReplaceChar(buffer_t *buf, vec2 *cursor, char char_, int repx){
+  if(cursor->y<0 || cursor->y>=buf->row_size) return;
+  erow *row = &buf->rows[cursor->y];
+  if(rowReplaceCharacter(row, char_, cursor->x, repx))
     bufferUpdateRow(buf, row);
 }
 
-void bufferPageScroll(buffer *buf, int key){
-  if (key == PAGE_UP)
-    buf->cursor.y = buf->offset.y + settings.scrollpadding;
-  else {
-    buf->cursor.y =
-      buf->offset.y + buf->size.y - 1 - settings.scrollpadding;
-    if (buf->cursor.y >= buf->row_size)
-      buf->cursor.y = buf->row_size - 1;
-  }
-  int _times = buf->size.y;
-  bufferMoveCursor(buf, key == PAGE_UP ? ARROW_UP : ARROW_DOWN, NORMAL, _times);
-}
-
-void bufferUpdateRow(buffer *buf, erow *row) {
+void bufferUpdateRow(buffer_t *buf, erow *row) {
   rowUpdate(row);
   rowUpdateSyntax(row, buf->syntax);
 }
 
-void bufferInsertRow(buffer *buf, int index, char *s, size_t len) {
+void bufferInsertRow(buffer_t *buf, int index, char *s, size_t len) {
   if (index < 0 || index > buf->row_size)
     return;
 
@@ -506,7 +396,7 @@ void bufferInsertRow(buffer *buf, int index, char *s, size_t len) {
   buf->dirty++;
 }
 
-void bufferDeleteRows(buffer *buf, int index, int len) {
+void bufferDeleteRows(buffer_t *buf, int index, int len) {
   if (index < 0 || index >= buf->row_size)
     return;
   if(index+len > buf->row_size) len = buf->row_size-index;
@@ -518,10 +408,10 @@ void bufferDeleteRows(buffer *buf, int index, int len) {
           (buf->row_size - index - len) * sizeof(erow));
   buf->row_size-=len;
   buf->dirty++;
-  bufferUpdateLineColSz(buf);
+  //bufferUpdateLineColSz(buf); TODO
 }
 
-void bufferOpenFile(buffer *buf, char *filename) {
+void bufferOpenFile(buffer_t *buf, char *filename) {
   free(buf->filename);
   buf->filename = strdup(filename);
 
@@ -542,48 +432,46 @@ void bufferOpenFile(buffer *buf, char *filename) {
       llen--;
     bufferInsertRow(buf, buf->row_size, line, llen);
   }
-  bufferUpdateLineColSz(buf);
+  //bufferUpdateLineColSz(buf); TODO
   free(line);
   fclose(fp);
   buf->dirty = 0;
 }
 
-void bufferInsertChar(buffer *buf, int ch) {
-  if (buf->cursor.y == buf->row_size) {
+void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch) {
+  if (cursor->y == buf->row_size) {
     bufferInsertRow(buf, buf->row_size, "", 0);
   }
-  rowInsertCharacter(&buf->rows[buf->cursor.y], buf->cursor.x, ch);
-  bufferUpdateRow(buf, &buf->rows[buf->cursor.y]);
-  buf->cursor.x++;
-  buf->st.cursx = buf->cursor.x;
+  rowInsertCharacter(&buf->rows[cursor->y], cursor->x, ch);
+  bufferUpdateRow(buf, &buf->rows[cursor->y]);
+  cursor->x++;
   buf->dirty++;
 }
 
-void bufferInsertNewLine(buffer *buf) {
-  if (buf->cursor.x == 0){
-    bufferInsertRow(buf, buf->cursor.y++, "", 0);
-    buf->cursor.x = 0;
+void bufferInsertNewLine(buffer_t *buf, vec2 *cursor) {
+  if (cursor->x == 0){
+    bufferInsertRow(buf, cursor->y++, "", 0);
+    cursor->x = 0;
   } else {
-    erow *row = &buf->rows[buf->cursor.y];
-    bufferInsertRow(buf, buf->cursor.y+1, &row->chars[buf->cursor.x],
-                    row->size - buf->cursor.x);
-    row = &buf->rows[buf->cursor.y++];
-    row->size = buf->cursor.x;
+    erow *row = &buf->rows[cursor->y];
+    bufferInsertRow(buf, cursor->y+1, &row->chars[cursor->x],
+                    row->size - cursor->x);
+    row = &buf->rows[cursor->y++];
+    row->size = cursor->x;
     row->chars[row->size] = '\0';
     bufferUpdateRow(buf, row);
 
     int _tcount = countTabs(row->chars);
-    row = &buf->rows[buf->cursor.y];
-    buf->cursor.x = 0;
-    while(_tcount--) bufferInsertChar(buf, '\t');
+    row = &buf->rows[cursor->y];
+    cursor->x = 0;
+    while(_tcount--) bufferInsertChar(buf, cursor, '\t');
     bufferUpdateRow(buf, row);
   }
-  buf->st.cursx = buf->cursor.x;
   buf->dirty++;
-  bufferUpdateLineColSz(buf);
+  //bufferUpdateLineColSz(buf); TODO
 }
 
-void bufferSwapRow(buffer *buf, int index1, int index2){
+void bufferSwapRow(buffer_t *buf, int index1, int index2){
   if(index1 == index2) return;
   if(index1<0 || index1>=buf->row_size) return;
   if(index2<0 || index2>=buf->row_size) return;
@@ -593,36 +481,36 @@ void bufferSwapRow(buffer *buf, int index1, int index2){
   buf->rows[index2] = _tr;
 }
 
-void bufferDelChar(buffer *buf, int dir) {
-  if (buf->cursor.y >= buf->row_size)
+void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir){
+  if (cursor->y >= buf->row_size)
     return;
 
-  erow *row = &buf->rows[buf->cursor.y];
-  int _ps = buf->cursor.x + dir;
+  erow *row = &buf->rows[cursor->y];
+  int _ps = cursor->x + dir;
   if (_ps >= 0 && _ps<row->size) {
     rowDeleteCharacters(row, _ps, 1);
-    if (dir < 0) buf->cursor.x--;
+    if (dir < 0) cursor->x--;
   } else if(_ps == row->size){
-    if(buf->cursor.y+1 == buf->row_size) return;
-    erow *_nrow = &buf->rows[buf->cursor.y+1];
+    if(cursor->y+1 == buf->row_size) return;
+    erow *_nrow = &buf->rows[cursor->y+1];
     rowAppendString(row, _nrow->chars, _nrow->size);
-    bufferDeleteRows(buf, buf->cursor.y+1, 1);
+    bufferDeleteRows(buf, cursor->y+1, 1);
   }else {
-    if (buf->cursor.x == 0 && buf->cursor.y == 0)
+    if (cursor->x == 0 && cursor->y == 0)
       return;
-    buf->cursor.x = buf->rows[buf->cursor.y - 1].size;
-    rowAppendString(&buf->rows[buf->cursor.y - 1], row->chars, row->size);
-    bufferDeleteRows(buf, buf->cursor.y, 1);
-    buf->cursor.y--;
+    cursor->x = buf->rows[cursor->y - 1].size;
+    rowAppendString(&buf->rows[cursor->y - 1], row->chars, row->size);
+    bufferDeleteRows(buf, cursor->y, 1);
+    cursor->y--;
   }
-  row = &buf->rows[buf->cursor.y];
+  row = &buf->rows[cursor->y];
   bufferUpdateRow(buf, row);
-  buf->st.cursx = buf->cursor.x;
+  //buf->st.cursx = cursor->x;
   buf->dirty++;
-  bufferUpdateLineColSz(buf);
+  //bufferUpdateLineColSz(buf);
 }
 
-char *bufferRowtoStr(buffer *buf, int *buflen) {
+char *bufferRowtoStr(buffer_t *buf, int *buflen) {
   int tlen = 0;
   for (int j = 0; j < buf->row_size; j++) {
     tlen += buf->rows[j].size + 1;
@@ -638,8 +526,8 @@ char *bufferRowtoStr(buffer *buf, int *buflen) {
   return _cbuf;
 }
 
-int bufferSave(buffer *buf) {
-  // buffer should have filename
+int bufferSave(buffer_t *buf) {
+  // buffer_t should have filename
   if (!buf->filename)
     return -1;
 
@@ -663,11 +551,10 @@ int bufferSave(buffer *buf) {
   return -1;
 }
 
-int bufferFind(buffer *buf, char *query, int dir) {
-
+int bufferFind(buffer_t *buf, char *query, vec2 *cursor, int dir) {
+  if(!query || !strlen(query)) return 0;
   int _d = dir == 0 ? 1 : dir;
-  for (int i = 0, crs = buf->cursor.y; i <= buf->row_size; i++, crs += _d) {
-
+  for (int i = 0, crs = cursor->y; i <= buf->row_size; i++, crs += _d) {
     if (crs == -1)
       crs += buf->row_size;
     else if (crs == buf->row_size)
@@ -678,23 +565,23 @@ int bufferFind(buffer *buf, char *query, int dir) {
     if (match) {
       int _cx = rowRendertoCursorX(row, match - row->renderchars);
       if (i == 0) {
-        if (dir == 1 && _cx <= buf->cursor.x)
+        if (dir == 1 && _cx <= cursor->x)
           continue;
-        else if (dir == 0 && _cx < buf->cursor.x)
+        else if (dir == 0 && _cx < cursor->x)
           continue;
-        else if (dir == -1 && _cx >= buf->cursor.x)
+        else if (dir == -1 && _cx >= cursor->x)
           continue;
       }
 
-      buf->cursor.y = crs;
-      buf->cursor.x = _cx;
-      return 0;
+      cursor->y = crs;
+      cursor->x = _cx;
+      return 1;
     }
   }
-  return -1;
+  return 0;
 }
 
-void bufferSelectSyntax(buffer *buf) {
+void bufferSelectSyntax(buffer_t *buf) {
   buf->syntax = NULL;
   if (buf->filename == NULL)
     return;

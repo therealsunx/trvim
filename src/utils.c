@@ -8,7 +8,7 @@
 #include "settings.h"
 #include "utils.h"
 
-extern settingsType settings;
+extern settings_t settings;
 
 int getWindowSize_(int *rows, int *cols) {
   static struct winsize ws;
@@ -54,15 +54,18 @@ int getCursorPosition(int *rows, int *cols) {
   return 0;
 }
 
-void clearTerminal(void) {
-  write(STDIN_FILENO, "\x1b[2J", 4);
-  write(STDIN_FILENO, "\x1b[H", 3);
-}
-
 void die(const char *s) { // because func name:kill was already used
   clearTerminal();
   perror(s);
   exit(1);
+}
+
+int max(int a, int b){
+  return a>b?a:b;
+}
+
+int min(int a, int b){
+  return a<b?a:b;
 }
 
 int clamp(int value, int min, int max) {
@@ -121,11 +124,30 @@ int countTabs(char *str) {
 }
 
 void showCursor(int y, int x) {
+  moveCursor(y, x);
+  write(STDOUT_FILENO, "\x1b[?25h", 6);
+}
+
+void hideCursor(void){
+  write(STDOUT_FILENO, "\x1b[?25l", 6);
+}
+
+void moveCursor(int y, int x){
   char _cbuf[32];
-  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH\x1b[?25h", y, x);
-  if (l == 0)
-    die("cursor positioning failed");
+  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH", y+1, x+1);
+  if (l == 0) die("cursor positioning failed");
   write(STDOUT_FILENO, _cbuf, l);
+}
+
+void resetCursor(void){
+  write(STDOUT_FILENO, "\x1b[H", 3);
+}
+
+void thinCursor(void){
+  write(STDOUT_FILENO, "\x1b[6 q", 5);
+}
+void thickCursor(void){
+  write(STDOUT_FILENO, "\x1b[2 q", 5);
 }
 
 int checkPoint(boundstype bounds, vec2 point){
@@ -137,3 +159,9 @@ int checkPoint(boundstype bounds, vec2 point){
 
   return INBOUND;
 }
+
+void clearTerminal(void){
+  write(STDIN_FILENO, "\x1b[2J", 4);
+  write(STDIN_FILENO, "\x1b[H", 3);
+}
+

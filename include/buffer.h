@@ -1,61 +1,52 @@
 #pragma once
 
 #include "utils.h"
-#include "abuf.h"
 #include "row.h"
 #include "highlight.h"
 
-#define DEF_STATE (state_t) {0, NULL}
+#define DEF_STATE (state_t) {0}
 
 typedef struct {
-  int cursx;
-  char* query;
-} state_t;
-
-typedef struct {
-  vec2 cursor, view_size, size, offset;
-  int row_size, dirty, render_x, linenumcol_sz;
-  state_t st;
+  int row_size, dirty;
   erow *rows;
   char *filename;
   syntaxhl *syntax;
   boundstype selection;
-} buffer;
+} buffer_t;
 
-void initBuffer(buffer *buf);
-void freeBuffer(buffer *buf);
-void bufferUpdateLineColSz(buffer *buf);
-void bufferUpdateSize(buffer *buf, int sx, int sy);
-void addColumn(buffer *buf, abuf *ab, int linenum);
-void addWelcomeMsg(buffer *buf, abuf *ab);
-void bufferDrawRows(buffer *buf, abuf *ab, int selflag);
-void bufferDrawStatusBar(buffer *buf, abuf *ab);
+void initBuffer(buffer_t *buf);
+void freeBuffer(buffer_t *buf);
 
-void bufferShowCursor(buffer *buf);
-void bufferMoveCursor(buffer *buf, int key, int mode, int repeatx);
-void bufferAbsoluteJump(buffer *buf, int line);
-void bufferGotoEnd(buffer *buf, int mode, int posflg);
-void bufferScroll(buffer *buf);
-void bufferPageScroll(buffer *buf, int key);
-int bufferWordJump(buffer *buf, int flags);
-int bufferFindChar(buffer *buf, char char_, int dirflg);
-int bufferParaNav(buffer *buf, int dirflag);
-void bufferReplaceChar(buffer *buf, char char_, int repx);
+/*
+void bufferUpdateLineColSz(buffer_t *buf);
+void bufferUpdateSize(buffer_t *buf, int sx, int sy);
+void addColumn(buffer_t *buf, abuf *ab, int linenum);
+void bufferDrawRows(buffer_t *buf, abuf *ab, int selflag);
+void bufferDrawStatusBar(buffer_t *buf, abuf *ab);
+void bufferShowCursor(buffer_t *buf);
+void bufferScroll(buffer_t *buf);
+*/
 
-void bufferUpdateSelection(buffer *buf, int mode, int flags);
-void bufferSwapSelCursor(buffer *buf);
-void bufferDeleteSelection(buffer *buf);
-void bufferReplaceSelection(buffer *buf, char c);
+int bufferWordJump(buffer_t *buf, vec2 *cursor, int flags);
+int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg);
+int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag);
+void bufferReplaceChar(buffer_t *buf, vec2 *cursor, char char_, int repx);
 
-void bufferUpdateRow(buffer *buf, erow *row);
-void bufferInsertRow(buffer *buf, int index, char *s, size_t len);
-void bufferSwapRow(buffer *buf, int index1, int index2);
-void bufferDeleteRows(buffer *buf, int index, int len);
-void bufferOpenFile(buffer *buf, char *filename);
-void bufferInsertChar(buffer* buf, int ch);
-void bufferInsertNewLine(buffer *buf);
-void bufferDelChar(buffer *buf, int dir);
-int bufferSave(buffer *buf);
-char *bufferRowtoStr(buffer *buf, int *buflen);
-int bufferFind(buffer *buf, char *query, int dir);
-void bufferSelectSyntax(buffer *buf);
+void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags);
+void bufferSwapSelCursor(buffer_t *buf, vec2 *cursor);
+void bufferDeleteSelection(buffer_t *buf, vec2 *cursor);
+void bufferReplaceSelection(buffer_t *buf, char c);
+
+void bufferUpdateRow(buffer_t *buf, erow *row);
+void bufferInsertRow(buffer_t *buf, int index, char *s, size_t len);
+void bufferDeleteRows(buffer_t *buf, int index, int len);
+void bufferSwapRow(buffer_t *buf, int index1, int index2);
+
+void bufferOpenFile(buffer_t *buf, char *filename);
+void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch);
+void bufferInsertNewLine(buffer_t *buf, vec2 *cursor);
+void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir);
+int bufferSave(buffer_t *buf);
+char *bufferRowtoStr(buffer_t *buf, int *buflen);
+int bufferFind(buffer_t *buf, char *query, vec2 *cursor, int dir);
+void bufferSelectSyntax(buffer_t *buf);

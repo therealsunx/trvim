@@ -10,4 +10,4 @@ enum settingsflags {
 typedef struct {
   int scrollpadding, tabwidth;
   int flags;
-} settingsType;
+} settings_t;

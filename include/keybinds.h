@@ -11,6 +11,7 @@ enum editorKeys {
   CTRL_F = CTRL_KEY('f'),
 
   RETURN = '\r',
+  CTRL_X = CTRL_KEY('x'),
   CTRL_Z = CTRL_KEY('z'),
 
   BACKSPACE = 127,
