@@ -24,7 +24,7 @@ void writeBuf(abuf *ab){
 
 void abPutCursor(abuf *ab, int x, int y){
   char _cbuf[32];
-  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH", y, x);
+  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH", y+1, x+1);
   if (l == 0) die("cursor positioning failed");
   abAppend(ab, _cbuf, l);
 }

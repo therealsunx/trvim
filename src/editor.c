@@ -65,10 +65,10 @@ void editorSetStatusMsg(const char *fmt, ...) {
 }
 
 void editorStatusBarUpdate(void) {
-  if (editor.mode == NORMAL)
-    return;
   editor.cmdbar.msg_t = time(NULL);
-  if (editor.mode == INSERT)
+  if (editor.mode == NORMAL)
+    editorSetStatusMsg("-- NORMAL --");
+  else if (editor.mode == INSERT)
     editorSetStatusMsg("-- INSERT --");
   else if (editor.mode == VISUAL)
     editorSetStatusMsg("-- VISUAL --");
@@ -152,48 +152,52 @@ switch (c) {
 }
 */
 
-void editorProcessKeyPress(void){
+void editorProcessKeyPress(void) {
   int c = editorReadKey();
 
   view_t *view = windowGetCurView(&editor.window);
-  
-  if(viewMasterKeys(view, c, editor.mode)) {
+
+  if (viewMasterKeys(view, c, editor.mode)) {
     emptyStack(&editor.cmdstk);
     return;
   }
 
-  if(editor.mode == INSERT){
-    if(viewBack2Normal(c)) editorSwitchMode(NORMAL);
+  if (editor.mode == INSERT) {
+    if (viewBack2Normal(view, c, editor.mode)) editorSwitchMode(NORMAL);
     else viewInsertEdit(view, c);
     return;
   }
 
   push(&editor.cmdstk, c);
   parsedcmd_t pc = parseCommand(&editor.cmdstk);
-  if(!pc.repx) pc.repx++;
+  if(!pc.cmd) return;
+  int cmd_st = ST_NOOP;
+  if (!pc.repx) pc.repx++;
 
-  if(editor.mode == VISUAL || editor.mode == VISUAL_LINE){
-    if(viewBack2Normal(c)){
-      emptyStack(&editor.cmdstk);
-      return;
-    }
-    if(viewVisualOp(view, &pc)){
+  if (editor.mode == VISUAL || editor.mode == VISUAL_LINE) {
+    cmd_st = viewBack2Normal(view, c, editor.mode)
+      || viewVisualOp(view, &pc);
+    if(cmd_st != ST_NOOP) {
       emptyStack(&editor.cmdstk);
       return;
     }
   }
 
-  if(editor.mode == NORMAL){
-    if(viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode)){
+  if (editor.mode == NORMAL) {
+    cmd_st = viewInsCmdHandle(view, pc.cmd);
+    if (cmd_st != ST_NOOP) {
+      if(cmd_st == ST_SUCCESS) editorSwitchMode(INSERT);
       emptyStack(&editor.cmdstk);
       return;
-    }else if(viewInsCmdHandle(view, pc.cmd)){
+    }
+    cmd_st = viewVisCmdHandle(pc.cmd);
+    if(cmd_st){
       emptyStack(&editor.cmdstk);
-      return;
-    }else if(viewVisCmdHandle(pc.cmd)){
-      emptyStack(&editor.cmdstk);
-      return;
-    }else if(viewMiscCmdHandle(view, &pc)){
+      editorSwitchMode(cmd_st);
+    }
+    cmd_st = viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode)
+      || viewMiscCmdHandle(view, &pc);
+    if (cmd_st != ST_NOOP) {
       emptyStack(&editor.cmdstk);
       return;
     }
@@ -533,18 +537,16 @@ void editorSwitchMode(int mode) {
   if (mode == NORMAL) editor.cmdbar.msg_t = 0;
   else if (mode == VISUAL || mode == VISUAL_LINE) {
     view_t *view = windowGetCurView(&editor.window);
-    bufferUpdateSelection(view->buf, view->cursor, mode, 0);
+    viewUpdateSelection(view, editor.mode, 0);
   }
 
   // TODO : check it out later
-  //if (editor.mode == INSERT)
+  // if (editor.mode == INSERT)
   //  bufferMoveCursor(&editor.buf, ARROW_LEFT, mode, 1);
   editor.mode = mode;
 }
 
-void editorOpen(char *filename) {
-  windowOpenFile(&editor.window, filename); 
-}
+void editorOpen(char *filename) { windowOpenFile(&editor.window, filename); }
 
 void editorSaveBuffer(buffer_t *buf) {
   if (buf->filename == NULL) {
@@ -587,7 +589,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
   while (1) {
     editorSetStatusMsg(prompt, buf);
     editorRefreshScreen();
-    showCursor(editor.window.size.y, strlen(editor.cmdbar.msg) + 1);
+    showCursor(editor.window.size.y - CMDBAR_SZ, strlen(editor.cmdbar.msg));
 
     int c = editorReadKey();
 

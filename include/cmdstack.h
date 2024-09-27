@@ -1,5 +1,12 @@
 #pragma once
 
+enum CMD_STATE{
+  ST_NOOP = 0,
+  ST_ERR,
+  ST_WAIT,
+  ST_SUCCESS
+};
+
 typedef struct {
   int *vals;
   int top, _size;

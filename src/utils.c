@@ -134,7 +134,7 @@ void hideCursor(void){
 
 void moveCursor(int y, int x){
   char _cbuf[32];
-  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH", y, x);
+  int l = snprintf(_cbuf, sizeof(_cbuf), "\x1b[%d;%dH", y+1, x+1);
   if (l == 0) die("cursor positioning failed");
   write(STDOUT_FILENO, _cbuf, l);
 }

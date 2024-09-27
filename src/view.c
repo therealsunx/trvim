@@ -74,7 +74,7 @@ void viewDraw(view_t *view, int selflag) {
   }
 
   for (int y = 0; y < (view->size.y-STATUSBAR_SZ); y++) {
-    abPutCursor(&ab, view->position.x+1, view->position.y+y+1);
+    abPutCursor(&ab, view->position.x, view->position.y+y);
 
     int _fr = y + view->offset.y;
     _addlcol(view, &ab, _fr);
@@ -153,8 +153,8 @@ void viewDraw(view_t *view, int selflag) {
 
 void viewShowCursor(view_t *view, int mode){
   viewScrollCursor(view);
-  showCursor(view->position.y+view->cursor.y-view->offset.y+1,
-      view->position.x+view->lcols+view->render_cx-view->offset.x+1);
+  showCursor(view->position.y+view->cursor.y-view->offset.y,
+      view->position.x+view->lcols+view->render_cx-view->offset.x);
   if(mode == INSERT) thinCursor();
   else thickCursor();
 }
@@ -182,20 +182,20 @@ int viewMasterKeys(view_t *view, int key, int mode){
   switch (key) {
     case HOME_KEY:
       _arrMvmnt(view, '0', 1, mode);
-      return 1;
+      return ST_SUCCESS;
     case END_KEY:
       _arrMvmnt(view, '$', 1, mode);
-      return 1;
+      return ST_SUCCESS;
     case PAGE_UP:
     case PAGE_DOWN:
       _pageMvmnt(view, key);
-      return 1;
+      return ST_SUCCESS;
     case CTRL_Z:
     case CTRL_X:
       exit(0);
       break;
   }
-  return 0;
+  return ST_NOOP;
 }
 
 int viewMvmtCmdHandle(view_t *view, int key, int times, int mode){
@@ -203,89 +203,87 @@ int viewMvmtCmdHandle(view_t *view, int key, int times, int mode){
     case 'h':
     case ARROW_LEFT:
       _arrMvmnt(view, ARROW_LEFT, times, mode);
-      return 1;
+      return ST_SUCCESS;
     case 'j':
     case ARROW_DOWN:
       _arrMvmnt(view, ARROW_DOWN, times, mode);
-      return 1;
+      return ST_SUCCESS;
     case 'k':
     case ARROW_UP:
       _arrMvmnt(view, ARROW_UP, times, mode);
-      return 1;
+      return ST_SUCCESS;
     case 'l':
     case ARROW_RIGHT:
       _arrMvmnt(view, ARROW_RIGHT, times, mode);
-      return 1;
+      return ST_SUCCESS;
     case '$':
       _arrMvmnt(view, '$', times, mode);
-      return 1;
+      return ST_SUCCESS;
     case '0':
       _arrMvmnt(view, '0', times, mode);
-      return 1;
+      return ST_SUCCESS;
     case '_':
       _arrMvmnt(view, '_', times, mode);
-      return 1;
+      return ST_SUCCESS;
     case 'J':
       _absJmp(view, times);
-      return 1;
+      return ST_SUCCESS;
     case 'w':
       _wrdJmp(view, 0, times);
-      return 1;
+      return ST_SUCCESS;
     case 'W':
       _wrdJmp(view, JMP_PUNC, times);
-      return 1;
+      return ST_SUCCESS;
     case 'e':
       _wrdJmp(view, JMP_END, times);
-      return 1;
+      return ST_SUCCESS;
     case 'E':
       _wrdJmp(view, JMP_END|JMP_PUNC, times);
-      return 1;
+      return ST_SUCCESS;
     case 'b':
       _wrdJmp(view, JMP_BACK, times);
-      return 1;
+      return ST_SUCCESS;
     case 'B':
       _wrdJmp(view, JMP_BACK|JMP_PUNC, times);
-      return 1;
+      return ST_SUCCESS;
   }
-  return 0;
+  return ST_NOOP;
 }
 
 int viewInsCmdHandle(view_t *view, int key){
   switch(key){
     case 'i':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
     case 'I':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       else _arrMvmnt(view, '_', 1, INSERT);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
     case 'a':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       else _arrMvmnt(view, ARROW_RIGHT, 1, INSERT);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
     case 'A':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       else _arrMvmnt(view, '$', 1, INSERT);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
     case 'o':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       _arrMvmnt(view, '$', 1, INSERT);
       bufferInsertNewLine(view->buf, &view->cursor);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
     case 'O':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       _arrMvmnt(view, '$', 1, INSERT);
       bufferInsertNewLine(view->buf, &view->cursor); // TODO : should change the cursor
+      view->cursor.y--;
       bufferSwapRow(view->buf, view->cursor.y, view->cursor.y+1);
-      view->st.cursx = view->cursor.x;
-      return 1;
+      break;
+    default:
+      return ST_NOOP;
   }
-  return 0;
+  view->st.cursx = view->cursor.x;
+  return ST_SUCCESS;
 }
 
 int viewVisCmdHandle(int key){
@@ -310,12 +308,13 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
    * */
   switch(cmd->cmd){
     case 'r':
-      if (cmd->arg1 == 0 || cmd->arg1>=127) return 0;
+      if (cmd->arg1 == 0) return ST_WAIT;
+      if (cmd->arg1 >= 127) return ST_ERR;
       bufferReplaceChar(view->buf, &view->cursor, cmd->arg1, cmd->repx);
-      return 1;
+      return ST_SUCCESS;
 
   }
-  return 0;
+  return ST_ERR; // IMPORTANT ERR: else garbage buffer
 }
 
 int viewInsertEdit(view_t *view, int key){
@@ -340,20 +339,22 @@ int viewInsertEdit(view_t *view, int key){
       bufferInsertChar(view->buf, &view->cursor, key);
   }
   view->st.cursx = view->cursor.x;
-  return 1;
+  return ST_SUCCESS;
 }
 
-int viewBack2Normal(int key){
+int viewBack2Normal(view_t *view, int key, int mode){
   switch(key){
     case CTRL_C:
-    case ESCAPE: return 1;
+    case ESCAPE:
+      if(mode == INSERT) _arrMvmnt(view, ARROW_LEFT, 1, mode);
+      return ST_SUCCESS;
   }
-  return 0;
+  return ST_NOOP;
 }
 
 int viewVisualOp(view_t *view, parsedcmd_t *cmd){
   // TODO : visual mode operations
-  return 0;
+  return ST_NOOP;
 }
 
 void viewUpdateSelection(view_t *view, int mode, int flags){
@@ -368,7 +369,7 @@ void viewDeleteSelection(view_t *view){
 }
 
 void _drawStatusBar(view_t *view, abuf *ab){
-  abPutCursor(ab, view->position.x+1, view->position.y+view->size.y);
+  abPutCursor(ab, view->position.x, view->position.y+view->size.y-1);
 
   abAppend(ab, "\x1b[48;5;237m", 11);
 
@@ -413,10 +414,10 @@ void _arrMvmnt(view_t *view, int key, int times, int mode){
   switch (key) {
     case ARROW_LEFT:
       view->st.cursx = max(view->cursor.x-times, 0);
-      return;
+      break;
     case ARROW_RIGHT:
       view->st.cursx = min(view->cursor.x+times, _rsz);
-      return;
+      break;
     case ARROW_UP:
       view->cursor.y = max(view->cursor.y-times, 0);
       break;

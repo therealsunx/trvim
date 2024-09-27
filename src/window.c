@@ -103,7 +103,7 @@ void windowDrawViews(window_t *window, int mode){
 void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk){
   abuf ab = ABUF_INIT;
 
-  abPutCursor(&ab, 1, window->size.y-CMDBAR_SZ+1);
+  abPutCursor(&ab, 0, window->size.y-CMDBAR_SZ);
   char cmdsts[cmdstk->top];
   for (int i = 0; i < cmdstk->top; i++)
     cmdsts[i] = cmdstk->vals[i];
@@ -115,7 +115,7 @@ void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk){
     int _mlen = clamp(_slen, 0, _rmsgPos);
     if(_mlen) abAppend(&ab, &cmdbar->msg[_slen-_mlen], _mlen);
   }
-  abPutCursor(&ab, _rmsgPos+1, window->size.y-CMDBAR_SZ+1);
+  abPutCursor(&ab, _rmsgPos, window->size.y-CMDBAR_SZ);
   abAppend(&ab, cmdsts, cmdstk->top);
   writeBuf(&ab);
   abFree(&ab);
