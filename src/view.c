@@ -73,8 +73,8 @@ void viewDraw(view_t *view, int selflag) {
         rowCursorToRenderX(&view->buf->rows[sel.start.y], sel.start.x);
   }
 
-  for (int y = 0; y < view->size.y - STATUSBAR_SZ; y++) {
-    moveCursor(view->position.y+y, view->position.x);
+  for (int y = 0; y < (view->size.y-STATUSBAR_SZ); y++) {
+    abPutCursor(&ab, view->position.x+1, view->position.y+y+1);
 
     int _fr = y + view->offset.y;
     _addlcol(view, &ab, _fr);
@@ -147,6 +147,8 @@ void viewDraw(view_t *view, int selflag) {
     //abAppend(&ab, "\r\n", 2);
   }
   _drawStatusBar(view, &ab);
+  writeBuf(&ab);
+  abFree(&ab);
 }
 
 void viewShowCursor(view_t *view, int mode){
@@ -366,7 +368,7 @@ void viewDeleteSelection(view_t *view){
 }
 
 void _drawStatusBar(view_t *view, abuf *ab){
-  moveCursor(view->position.y-view->size.y-1, view->position.x);
+  abPutCursor(ab, view->position.x+1, view->position.y+view->size.y);
 
   abAppend(ab, "\x1b[48;5;237m", 11);
 

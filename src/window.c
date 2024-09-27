@@ -95,14 +95,15 @@ void windowRemoveView(window_t *window){
 }
 
 void windowDrawViews(window_t *window, int mode){
-  for(int i=0; i<window->vcount;i++)
+  for(int i=0; i<window->vcount;i++){
     viewDraw(&window->views[i], i==window->active_i?mode:0);
+  }
 }
 
 void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk){
   abuf ab = ABUF_INIT;
 
-  moveCursor(window->size.y-CMDBAR_SZ, 0);
+  abPutCursor(&ab, 1, window->size.y-CMDBAR_SZ+1);
   char cmdsts[cmdstk->top];
   for (int i = 0; i < cmdstk->top; i++)
     cmdsts[i] = cmdstk->vals[i];
@@ -114,9 +115,9 @@ void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk){
     int _mlen = clamp(_slen, 0, _rmsgPos);
     if(_mlen) abAppend(&ab, &cmdbar->msg[_slen-_mlen], _mlen);
   }
-  moveCursor(window->size.y-CMDBAR_SZ, _rmsgPos);
+  abPutCursor(&ab, _rmsgPos+1, window->size.y-CMDBAR_SZ+1);
   abAppend(&ab, cmdsts, cmdstk->top);
-  write(STDOUT_FILENO, ab.buf, ab.len);
+  writeBuf(&ab);
   abFree(&ab);
 }
 
@@ -132,8 +133,9 @@ void windowOpenFile(window_t *window, char *filename){
 
   // check if any of the open buffers have the file open
   for(int i=0; i<window->bufcount; i++){
-    if(strcmp(filename, window->bufs[i].filename)==0){ // same
-      viewSetBuffer(view, &window->bufs[i]);
+    buffer_t *buf = &window->bufs[i];
+    if(buf->filename && strcmp(filename, buf->filename)==0){ // same
+      viewSetBuffer(view, buf);
       return;
     }
   }

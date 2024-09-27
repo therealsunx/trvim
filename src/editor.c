@@ -542,7 +542,9 @@ void editorSwitchMode(int mode) {
   editor.mode = mode;
 }
 
-void editorOpen(char *filename) { windowOpenFile(&editor.window, filename); }
+void editorOpen(char *filename) {
+  windowOpenFile(&editor.window, filename); 
+}
 
 void editorSaveBuffer(buffer_t *buf) {
   if (buf->filename == NULL) {
