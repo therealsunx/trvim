@@ -77,6 +77,7 @@ void editorStatusBarUpdate(void) {
 
 void editorRefreshScreen(void) {
   editorStatusBarUpdate();
+  windowScrollCursor(&editor.window);
   hideCursor();
   clearTerminal();
   windowDrawViews(&editor.window, editor.mode);
@@ -160,6 +161,7 @@ void editorProcessKeyPress(void) {
   view_t *view = windowGetCurView(&editor.window);
 
   if (viewMasterKeys(view, c, editor.mode)) {
+    viewUpdateSelection(view, editor.mode, 1);
     emptyStack(&editor.cmdstk);
     return;
   }
@@ -179,14 +181,16 @@ void editorProcessKeyPress(void) {
   if (editor.mode == VISUAL || editor.mode == VISUAL_LINE) {
     cmd_st = viewBack2Normal(view, c, editor.mode);
     if(cmd_st != ST_NOOP){
+      viewUpdateSelection(view, editor.mode, 1);
       editorSwitchMode(NORMAL);
       emptyStack(&editor.cmdstk);
       return;
     }
 
-    cmd_st = viewVisualOp(view, &pc);
+    cmd_st = viewVisualOp(view, &pc, editor.mode);
     if(cmd_st != ST_NOOP) {
-      emptyStack(&editor.cmdstk);
+      if(cmd_st != ST_WAIT) emptyStack(&editor.cmdstk);
+      viewUpdateSelection(view, editor.mode, 1);
       return;
     }
   }
@@ -204,16 +208,20 @@ void editorProcessKeyPress(void) {
       editorSwitchMode(cmd_st);
       return;
     }
-    cmd_st = viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode);
-    if(cmd_st != ST_NOOP){
-      emptyStack(&editor.cmdstk);
-      return;
-    }
-    cmd_st = viewMiscCmdHandle(view, &pc);
-    if (cmd_st != ST_WAIT) {
-      emptyStack(&editor.cmdstk);
-      return;
-    }
+  }
+
+  cmd_st = viewMvmtCmdHandle(view, pc.cmd, pc.repx, editor.mode);
+  if(cmd_st != ST_NOOP){
+    viewUpdateSelection(view, editor.mode, 1);
+    emptyStack(&editor.cmdstk);
+    return;
+  }
+  cmd_st = viewMiscCmdHandle(view, &pc);
+
+  if (cmd_st != ST_WAIT) {
+    viewUpdateSelection(view, editor.mode, 1);
+    emptyStack(&editor.cmdstk);
+    return;
   }
 }
 

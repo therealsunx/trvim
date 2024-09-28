@@ -61,13 +61,14 @@ void _addlcol(view_t *view, abuf *ab, int linenum) {
 
 void viewDraw(view_t *view, int selflag) {
   abuf ab = ABUF_INIT;
+  buffer_t *buf = view->buf;
 
   vec2 sstate = {BEFORE, BEFORE}; // for selection mode
-  boundstype sel = view->buf->selection;
+  boundstype sel = buf->selection;
   if (selflag) {
-    sel.end.x = rowCursorToRenderX(&view->buf->rows[sel.end.y], sel.end.x);
+    sel.end.x = rowCursorToRenderX(&buf->rows[sel.end.y], sel.end.x);
     sel.start.x =
-        rowCursorToRenderX(&view->buf->rows[sel.start.y], sel.start.x);
+        rowCursorToRenderX(&buf->rows[sel.start.y], sel.start.x);
   }
 
   for (int y = 0; y < (view->size.y-STATUSBAR_SZ); y++) {
@@ -76,14 +77,14 @@ void viewDraw(view_t *view, int selflag) {
     int _fr = y + view->offset.y;
     _addlcol(view, &ab, _fr);
 
-    if (_fr >= view->buf->row_size) {
-      if (view->buf->row_size == 0 && y == view->size.y / 3)
+    if (_fr >= buf->row_size) {
+      if (buf->row_size == 0 && y == view->size.y / 3)
         _addWelcomeMsg(view, &ab);
     } else {
-      int len = clamp(view->buf->rows[_fr].rsize-view->offset.x, 0, view->size.x-view->lcols);
+      int len = clamp(buf->rows[_fr].rsize-view->offset.x, 0, view->size.x-view->lcols);
 
-      char *ch = &view->buf->rows[_fr].renderchars[view->offset.x];
-      unsigned char *hl = &view->buf->rows[_fr].hlchars[view->offset.x];
+      char *ch = &buf->rows[_fr].renderchars[view->offset.x];
+      unsigned char *hl = &buf->rows[_fr].hlchars[view->offset.x];
       int _ptk = TK_NORMAL;
 
       if(selflag){
@@ -97,8 +98,11 @@ void viewDraw(view_t *view, int selflag) {
       for(int i=0; i<len; i++){
         int _clr = hlTokentoColorIndex(hl[i]);
         if(hl[i] != _ptk){
-          if (_ptk == TK_MATCH || _ptk == TK_KEYWORD3)
+          if (_ptk == TK_KEYWORD3) abAppend(&ab, "\x1b[2m", 4);
+          if (_ptk == TK_MATCH) {
+            if (sstate.y == INBOUND) sstate.x =BEFORE; // this will force recheck of selection bound
             abAppend(&ab, "\x1b[m", 3);
+          }
 
           char _tcstr[24];
           int _cl;
@@ -122,7 +126,7 @@ void viewDraw(view_t *view, int selflag) {
           if(sstate.x == BEFORE){
             if(i>=sel.start.x){
               sstate.x = INBOUND;
-              abAppend(&ab, "\x1b[100m", 6);
+              abAppend(&ab, "\x1b[48:5:238m", 12);
             }
           } else if(sstate.x == INBOUND){
             if(_fr == sel.end.y && i>sel.end.x){
@@ -131,7 +135,7 @@ void viewDraw(view_t *view, int selflag) {
             }
           } // no need to process after AFTER
           if(i==0 && sstate.x == INBOUND){
-            abAppend(&ab, "\x1b[100m", 6);
+            abAppend(&ab, "\x1b[48:5:238m", 12);
           }
         }
 
@@ -146,7 +150,7 @@ void viewDraw(view_t *view, int selflag) {
 }
 
 void viewShowCursor(view_t *view, int mode){
-  viewScrollCursor(view);
+  //viewScrollCursor(view);
   showCursor(view->position.y+view->cursor.y-view->offset.y,
       view->position.x+view->lcols+view->render_cx-view->offset.x);
   if(mode == INSERT) thinCursor();
@@ -274,7 +278,7 @@ int viewInsCmdHandle(view_t *view, int key){
     case 'O':
       if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
       _arrMvmnt(view, '$', 1, INSERT);
-      bufferInsertNewLine(view->buf, &view->cursor); // TODO : should change the cursor
+      bufferInsertNewLine(view->buf, &view->cursor);
       view->cursor.y--;
       bufferSwapRow(view->buf, view->cursor.y, view->cursor.y+1);
       break;
@@ -365,12 +369,44 @@ int viewBack2Normal(view_t *view, int key, int mode){
   return ST_NOOP;
 }
 
-int viewVisualOp(view_t *view, parsedcmd_t *cmd){
-  // TODO : visual mode operations
+int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
+  switch(cmd->cmd){
+    case 'o':
+    case 'O':
+      bufferSwapSelCursor(view->buf, &view->cursor);
+      return ST_SUCCESS;
+    case 'd':
+    case 'x':
+      bufferDeleteSelection(view->buf, &view->cursor);
+      editorSwitchMode(NORMAL);
+      return ST_SUCCESS;
+    case 'c':
+      {
+        int ec = view->cursor.y;
+        bufferDeleteSelection(view->buf, &view->cursor);
+        editorSwitchMode(INSERT);
+        if(mode == VISUAL)
+          _arrMvmnt(view, ARROW_RIGHT, 1, INSERT);
+        else if (ec >= view->buf->row_size){
+          _arrMvmnt(view, '$', 1, INSERT);
+          bufferInsertNewLine(view->buf, &view->cursor);
+        }
+      }
+      return ST_SUCCESS;
+    case 'r':
+      if(cmd->arg1 == 0) return ST_WAIT;
+      if(cmd->arg1 >= 127) return ST_ERR;
+      bufferReplaceSelection(view->buf, cmd->arg1);
+      return ST_SUCCESS;
+    case 'v':
+      editorSwitchMode(mode==VISUAL?VISUAL_LINE:VISUAL);
+      return ST_SUCCESS;
+  }
   return ST_NOOP;
 }
 
 void viewUpdateSelection(view_t *view, int mode, int flags){
+  if(mode != VISUAL && mode != VISUAL_LINE) return;
   bufferUpdateSelection(view->buf, view->cursor, mode, flags);
 }
 void viewSwapSelCursor(view_t *view){

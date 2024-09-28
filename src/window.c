@@ -95,8 +95,9 @@ void windowRemoveView(window_t *window){
 }
 
 void windowDrawViews(window_t *window, int mode){
+  int _selflag = mode == VISUAL || mode == VISUAL_LINE;
   for(int i=0; i<window->vcount;i++){
-    viewDraw(&window->views[i], i==window->active_i?mode:0);
+    viewDraw(&window->views[i], i==window->active_i?_selflag:0);
   }
 }
 
@@ -125,6 +126,11 @@ void windowShowCursor(window_t *window, int mode){
   if(!window->views || window->vcount==0) die("no views");
   window->active_i = clamp(window->active_i, 0, window->vcount);
   viewShowCursor(&window->views[window->active_i], mode);
+}
+void windowScrollCursor(window_t *window){
+  if(!window->views || window->vcount==0) die("no views");
+  window->active_i = clamp(window->active_i, 0, window->vcount);
+  viewScrollCursor(&window->views[window->active_i]);
 }
 
 void windowOpenFile(window_t *window, char *filename){

@@ -45,7 +45,7 @@ int viewInsertEdit(view_t *view, int key);
 int viewBack2Normal(view_t *view, int key, int mode);
 
 // in visual mode
-int viewVisualOp(view_t *view, parsedcmd_t *cmd);
+int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode);
 
 // other functions for buffer edit
 void viewUpdateSelection(view_t *view, int mode, int flags);

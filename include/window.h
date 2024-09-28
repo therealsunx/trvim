@@ -33,6 +33,7 @@ void windowSizeUpdate(window_t *window);
 void windowDrawViews(window_t *window, int mode);
 void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk);
 void windowShowCursor(window_t *window, int mode);
+void windowScrollCursor(window_t *window);
 
 void windowOpenFile(window_t *window, char *filename);
 int windowDirtyBufCheck(window_t *window);
