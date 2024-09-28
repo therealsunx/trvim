@@ -85,6 +85,44 @@ char *CSHARP_KEYWORDS[] = {
   NULL
 };
 
+char *DART_FMATCH[] = {".dart", NULL};
+char *DART_KEYWORDS[] = {
+  "int|", "double|", "bool|", "String|", "num|", "void|",
+  "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const", 
+  "continue", "default", "deferred", "do", "dynamic", "else", "enum", "export", "extends", 
+  "extension", "external", "factory", "false", "final", "finally", "for", "Function", "get", 
+  "hide", "if", "implements", "import", "in", "interface", "is", "late", "library", "mixin", 
+  "new", "null", "on", "operator", "part", "required", "rethrow", "return", "set", "show", 
+  "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef", "var", 
+  "void", "while", "with", "yield",
+  NULL
+};
+
+char *JAVA_FMATCH[] = {".java", NULL};
+char *JAVA_KEYWORDS[] = {
+  "int|", "float|", "double|", "boolean|", "char|", "byte|", "short|", "long|", "void|",
+  "abstract", "assert", "break", "case", "catch", "class", "const", "continue", "default", 
+  "do", "else", "enum", "extends", "final", "finally", "for", "goto", "if", "implements", 
+  "import", "instanceof", "interface", "native", "new", "null", "package", "private", 
+  "protected", "public", "return", "static", "strictfp", "super", "switch", "synchronized", 
+  "this", "throw", "throws", "transient", "try", "volatile", "while", "true", "false",
+  NULL
+};
+
+char *KOTLIN_FMATCH[] = {".kt", ".kts", NULL};
+char *KOTLIN_KEYWORDS[] = {
+  "Int|", "Double|", "Float|", "Boolean|", "Char|", "Byte|", "Short|", "Long|", "String|", "Unit|",
+  "abstract", "annotation", "as", "break", "by", "catch", "class", "companion", "const", 
+  "constructor", "continue", "crossinline", "data", "delegate", "do", "else", "enum", "expect", 
+  "external", "false", "final", "finally", "for", "fun", "get", "if", "import", "in", 
+  "infix", "init", "inline", "inner", "interface", "internal", "is", "lateinit", "noinline", 
+  "null", "object", "open", "operator", "out", "override", "package", "private", "protected", 
+  "public", "reified", "return", "sealed", "set", "super", "suspend", "tailrec", "this", 
+  "throw", "true", "try", "typealias", "typeof", "val", "var", "vararg", "when", "where", 
+  "while",
+  NULL
+};
+
 syntaxhl HLDB[] ={
   {
     "c",
@@ -166,7 +204,34 @@ syntaxhl HLDB[] ={
     '\0',
     "//",
     HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
-  }
+  },
+  {
+    "java",
+    JAVA_FMATCH,
+    JAVA_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "dart",
+    DART_FMATCH,
+    DART_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
+  {
+    "java",
+    KOTLIN_FMATCH,
+    KOTLIN_KEYWORDS,
+    NULL,
+    '\0',
+    "//",
+    HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
+  },
 };
 
 int HLDB_SIZE = sizeof(HLDB)/sizeof(HLDB[0]);

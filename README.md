@@ -1,8 +1,12 @@
 # **trvim** - terminal text editor
-![img](trvim.png)
+<p align="center">
+    ![img](trvim.png)
+</p>
 
 ### **Overview**
-**trvim** - is a text editor built in C, it is fast and is similiar in operation to vim. It uses the power of non-canonical terminal to provide quick, robust and easy operation. It supports features like syntax highlighting, minimal auto-completion, auto-indentation, cross-platform use, no-mouse movement bindings, etc. Enjoy !!
+**trvim** - is a text editor built in C, it is fast and is similiar in operation to vim. It uses the power of non-canonical terminal to provide quick, robust and easy operation. It supports features like syntax highlighting, auto-indentation, cross-platform use, zero-mouse-need movement bindings, etc.
+___Enjoy !!___
+
 
 ## **Key Features**
 Here are the key features supported by this editor.
@@ -15,7 +19,13 @@ Here are the key features supported by this editor.
 | **Faster Navigation**           | Has easy to use keybinds (similiar to vim), with zero-mouse requirement, allowing quicker navigation.   |
 
 
-## **Supported Programming Languages**
+## **Syntax Highlighting**
+The editor's syntax highlighting engine is designed to provide clear, readable code with visually distinct colors for different parts of your codes like keywords, punctuations, comments, strings, etc.
+
+Syntax highlighting is done by built-in highlight database, so no external plugin is used for it. It only has minimal required highlighting required for any language, which prevents the editor from being littered with errors, warnings and whatnot.
+
+
+### **Supported Programming Languages**
 The editor supports syntax highlighting for the following languages:
 
 | Language        | Extension(s)        |
@@ -30,17 +40,10 @@ The editor supports syntax highlighting for the following languages:
 | **Zig**         | `.zig`              |
 | **C#**          | `.cs`               |
 | **Go**          | `.go`               |
+| **Java**        | `.java`             |
+| **Dart**        | `.dart`             |
+| **Go**          | `.kt`, `.kts`       |
 
-
-## **Syntax Highlighting**
-The editor's syntax highlighting engine is designed to provide clear, readable code with visually distinct colors for different parts of your code, such as:
-
-- **Primitive Types**: Highlighted with a specific color to differentiate from other keywords.
-- **Keywords**: Other important language constructs like `for`, `if`, `return` are highlighted in a separate color for easy identification. There are 3 different types of keywords classified for each languages to provide better distinction.
-- **Comments**: Comments are rendered in a lighter or dimmed color, allowing the actual code to stand out more.
-- **Preprocessor Directives**: Preprocessor instructions are styled in a distinct format for languages that support them.
-
-Syntax highlighting is done by built-in highlight database, so external plugin is used for it. It only has minimal required highlighting required for any language, which prevents the editor from being littered with errors, warnings and whatnot.
 
 ### **Syntax Flags**
 Syntax highlighting is controlled via several flags that allow for customizable styling:
@@ -55,6 +58,8 @@ Syntax highlighting is controlled via several flags that allow for customizable 
 | `HL_STRING`          | Highlights string literals.                                                 |
 
 _If you want to customize your own version of **trvim**, then you can make use of this information to set up highlighting rules in `highlight.c`. Otherwise ignore this information._
+_The colors for syntax highlighting are 8bit ANSI color codes. So if you want to customize colors follow this [wikipedia article on ANSI codes.](https://en.wikipedia.org/wiki/ANSI_escape_code)_
+
 
 ## **Getting Started**
 
@@ -63,7 +68,7 @@ _If you want to customize your own version of **trvim**, then you can make use o
     ```bash
     git clone https://github.com/therealsunx/trvim
     ```
-2. Run the provided bash script to compile and install the editor:
+2. Run the provided bash script to compile and install the editor to system via: 
     ```bash
     cd trvim
     ./install.sh
@@ -71,9 +76,11 @@ _If you want to customize your own version of **trvim**, then you can make use o
 3. Launch the editor from your terminal:
     ```bash
     trvim filename.c
+    #or
+    trvim
     ```
 
-## **Customization**
+## **Customization & Test**
 1. Clone the repository to your local machine:
     ```bash
     git clone https://github.com/therealsunx/trvim
@@ -82,13 +89,29 @@ _If you want to customize your own version of **trvim**, then you can make use o
     ```bash
     ./setup.sh
     ```
+3. Everything is set up for development. If you want to build and test it without installing into your system, then do this:
+    ```bash
+    cd build
+    make
+    ```
+4. This will build the app for you. Run it:
+    ```bash
+    ./trvim filename
+    #or
+    ./trvim
+    ```
+
+___Use it just like you use vim.___
+
 
 ## **License**
 This project is licensed under whatever it is used in `LICENSE` file. I copied it from my another project. Ignore any mistakes. See the `LICENSE` file for more information.
 
-## Features-List (TODO board)
-_completed features are marked with =
-_undergoing features are marked with .
+
+## Features-List(for you) : TODO board (for me)
+___Completed features are marked with =
+Undergoing features are marked with .
+I still have to make a good looking table instead of list for this section. SO, ignore inconsistencies like a good programmer.___
 
 - = movement
 - = editing
@@ -192,8 +215,13 @@ _undergoing features are marked with .
             - = v : switch between visual and visual line mode
         - = d or x : delete selection
         - = c : cut selection (delete & switch to insert mode)
-        - = r{character} : replace selection with following character
+        - = r {character} : replace selection with following character
 - . bufferize the editor
-    - . multiple buffers
-    - . buffer navigation
+    - = views for buffers
+    - . split {n} views in single screen
+    - . keybinds for opening & editing views & buffers inside editor
+        - . :e {filename} opens the file in buffer and shows in current view
+        - . TAB goes to next buffer in the current view
+        - . CTRL-{h, l} navigates to {left, right} views
+        - . save and quit buffers and views (yet to think of bindings)
 
