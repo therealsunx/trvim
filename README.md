@@ -1,6 +1,6 @@
 # **trvim** - terminal text editor
 <p align="center">
-    ![img](trvim.png)
+    <img src="trvim.png" />
 </p>
 
 ### **Overview**
@@ -225,3 +225,4 @@ I still have to make a good looking table instead of list for this section. SO, 
         - . CTRL-{h, l} navigates to {left, right} views
         - . save and quit buffers and views (yet to think of bindings)
 
+- . multiline/block comments (i hate it... may not even implement it... just use // on each line instead of /**/ sh*t)
