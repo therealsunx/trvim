@@ -22,6 +22,7 @@
   - [Command Mode](#command-mode)
   - [Buffer and View Management](#buffer-and-view-management)
   - [Command Replication](#command-replication)
+  - [Examples](#examples)
 
 ### **Overview**
 **trvim** - is a text editor built in C, it is fast and is similiar in operation to vim. It uses the power of non-canonical terminal to provide quick, robust and easy operation. It supports features like syntax highlighting, auto-indentation, cross-platform use, zero-mouse-need movement bindings, etc.
@@ -243,11 +244,11 @@ In this mode you can do almost everything as same as normal mode, but it will se
 
 ## Examples
 Take a look at following examples along with guide toget hold of it.
-e.g.1. `ea` will go to end of word and start writing after that.
-e.g.2. `VC` will comment current line, `V2jC` will comment 3 lines
-e.g.3. `{V}C` will comment the paragraph. (breakdown: `{` moves to empy line before paragraph, `V` switches to selection/visual mode, `}` moves to next end of paragraph, and `C` will comment all selected lines)
-e.g.4. `wverc` will go to next word and replace it with c. It seems hard knowing this command but breaking it down will make you understand that it is not even a bit hard. `w` will go to start of next word, `v` will switch to selection/visual mode, `e` will go to end of word, (notice that the word will get highlighted now), `rc` will replace selection with c.
-e.g.5. similiarly, `wvec` will cut the next word and also switches to insert mode, so you can write something in its place instead.
+- `ea` will go to end of word and start writing after that.
+- `VC` will comment current line, `V2jC` will comment 3 lines
+- `{V}C` will comment the paragraph. (breakdown: `{` moves to empy line before paragraph, `V` switches to selection/visual mode, `}` moves to next end of paragraph, and `C` will comment all selected lines)
+- `wverc` will go to next word and replace it with c. It seems hard knowing this command but breaking it down will make you understand that it is not even a bit hard. `w` will go to start of next word, `v` will switch to selection/visual mode, `e` will go to end of word, (notice that the word will get highlighted now), `rc` will replace selection with c.
+- similiarly, `wvec` will cut the next word and also switches to insert mode, so you can write something in its place instead.
 
 Easy right !!
 _(Note: you can enable such movement bindings on code editors like VS code by installing VIM extensions)_
