@@ -5,18 +5,20 @@
 #include "keybinds.h"
 #include "settings.h"
 
+extern editorconf editor;
 extern settings_t settings;
 
 void update(view_t *view) {
-  if (!view->buf) return;
-  int _sz = view->buf->row_size;
-  view->lcols = SIGNCOL_SZ + LCOL_GAP + 1; // 1 minimum char
-  while ((_sz /= 10))
-    view->lcols++;
+  if (!editor.window.bufs) return;
+  int _sz = windowGetBufOfView(&editor.window, view)->row_size;
+  view->lcols = SIGNCOL_SZ + LCOL_GAP; // 1 minimum char
+  int c = 0;
+  while ((_sz /= 10)) c++; // HEHE
+  view->lcols += max(c, 3);
 }
 
-void initView(view_t *view, buffer_t *buf, vec2 size, vec2 position) {
-  view->buf = buf;
+void initView(view_t *view, int buf_i, vec2 size, vec2 position) {
+  view->buf_i = buf_i;
   view->position = position;
   view->size = size;
   view->cursor = DEF_VEC2;
@@ -30,8 +32,8 @@ void viewSetDims(view_t *view, vec2 size, vec2 position) {
   update(view);
 }
 
-void viewSetBuffer(view_t *view, buffer_t *buf) {
-  view->buf = buf;
+void viewSetBuffer(view_t *view, int buf_i) {
+  view->buf_i = buf_i;
   view->cursor = DEF_VEC2;
   view->offset = DEF_VEC2;
   update(view);
@@ -43,7 +45,7 @@ void _addlcol(view_t *view, abuf *ab, int linenum) {
   int _nsz = view->lcols - SIGNCOL_SZ - LCOL_GAP;
 
   abAppend(ab, "\x1b[48;5;237m \x1b[m\x1b[90m", 20);
-  if (linenum < view->buf->row_size) {
+  if (linenum < windowGetBufOfView(&editor.window, view)->row_size) {
     if (settings.flags & REL_LINENUM && linenum != view->cursor.y) {
       val -= view->cursor.y + 1;
       if (val < 0)
@@ -61,7 +63,7 @@ void _addlcol(view_t *view, abuf *ab, int linenum) {
 
 void viewDraw(view_t *view, int selflag) {
   abuf ab = ABUF_INIT;
-  buffer_t *buf = view->buf;
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
 
   vec2 sstate = {BEFORE, BEFORE}; // for selection mode
   boundstype sel = buf->selection;
@@ -166,8 +168,9 @@ void viewScrollCursor(view_t *view){
     if(view->offset.y < 0) view->offset.y = 0;
   }
 
-  view->render_cx = view->cursor.y < view->buf->row_size?
-    rowCursorToRenderX(&view->buf->rows[view->cursor.y], view->cursor.x):
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  view->render_cx = view->cursor.y < buf->row_size?
+    rowCursorToRenderX(&buf->rows[view->cursor.y], view->cursor.x):
     0;
   int _cx = view->render_cx - view->offset.x;
   if(_cx >= view->size.x - view->lcols - 1)
@@ -254,33 +257,34 @@ int viewMvmtCmdHandle(view_t *view, int key, int times, int mode){
 }
 
 int viewInsCmdHandle(view_t *view, int key){
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(key){
     case 'i':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       break;
     case 'I':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       else _arrMvmnt(view, '_', 1, INSERT);
       break;
     case 'a':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       else _arrMvmnt(view, ARROW_RIGHT, 1, INSERT);
       break;
     case 'A':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       else _arrMvmnt(view, '$', 1, INSERT);
       break;
     case 'o':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       _arrMvmnt(view, '$', 1, INSERT);
-      bufferInsertNewLine(view->buf, &view->cursor);
+      bufferInsertNewLine(buf, &view->cursor);
       break;
     case 'O':
-      if(!view->buf->row_size) bufferInsertRow(view->buf, 0, "", 0);
+      if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
       _arrMvmnt(view, '$', 1, INSERT);
-      bufferInsertNewLine(view->buf, &view->cursor);
+      bufferInsertNewLine(buf, &view->cursor);
       view->cursor.y--;
-      bufferSwapRow(view->buf, view->cursor.y, view->cursor.y+1);
+      bufferSwapRow(buf, view->cursor.y, view->cursor.y+1);
       break;
     default:
       return ST_NOOP;
@@ -302,11 +306,12 @@ int viewVisCmdHandle(view_t *view, int key){
 }
 
 int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(cmd->cmd){
     case 'r':
       if (cmd->arg1 == 0) return ST_WAIT;
       if (cmd->arg1 >= 127) return ST_ERR;
-      bufferReplaceChar(view->buf, &view->cursor, cmd->arg1, cmd->repx);
+      bufferReplaceChar(buf, &view->cursor, cmd->arg1, cmd->repx);
       return ST_SUCCESS;
     case 'f':
     case 'F':
@@ -315,14 +320,14 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
         if (cmd->arg1 >= 127) return ST_ERR;
         int flg = cmd->cmd=='F'?JMP_BACK:0;
         while(cmd->repx--
-            && bufferFindChar(view->buf, &view->cursor, cmd->arg1, flg)){}
+            && bufferFindChar(buf, &view->cursor, cmd->arg1, flg)){}
         return ST_SUCCESS;
       }
     case '{':
-      bufferParaNav(view->buf, &view->cursor, cmd->repx, JMP_BACK);
+      bufferParaNav(buf, &view->cursor, cmd->repx, JMP_BACK);
       return ST_SUCCESS;
     case '}':
-      bufferParaNav(view->buf, &view->cursor, cmd->repx, 0);
+      bufferParaNav(buf, &view->cursor, cmd->repx, 0);
       return ST_SUCCESS;
     case '/':
       editorFind("/%s");
@@ -335,16 +340,17 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
 }
 
 int viewInsertEdit(view_t *view, int key){
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(key){
     case RETURN:
-      bufferInsertNewLine(view->buf, &view->cursor);
+      bufferInsertNewLine(buf, &view->cursor);
       break;
     case BACKSPACE:
     case CTRL_H:
-      bufferDelChar(view->buf, &view->cursor, -1);
+      bufferDelChar(buf, &view->cursor, -1);
       break;
     case DEL_KEY:
-      bufferDelChar(view->buf, &view->cursor, 0);
+      bufferDelChar(buf, &view->cursor, 0);
       break;
     case ARROW_LEFT:
     case ARROW_RIGHT:
@@ -353,7 +359,7 @@ int viewInsertEdit(view_t *view, int key){
       _arrMvmnt(view, key, 1, INSERT);
       break;
     default:
-      bufferInsertChar(view->buf, &view->cursor, key);
+      bufferInsertChar(buf, &view->cursor, key);
   }
   view->st.cursx = view->cursor.x;
   return ST_SUCCESS;
@@ -370,33 +376,34 @@ int viewBack2Normal(view_t *view, int key, int mode){
 }
 
 int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(cmd->cmd){
     case 'o':
     case 'O':
-      bufferSwapSelCursor(view->buf, &view->cursor);
+      bufferSwapSelCursor(buf, &view->cursor);
       return ST_SUCCESS;
     case 'd':
     case 'x':
-      bufferDeleteSelection(view->buf, &view->cursor);
+      bufferDeleteSelection(buf, &view->cursor);
       editorSwitchMode(NORMAL);
       return ST_SUCCESS;
     case 'c':
       {
         int ec = view->cursor.y;
-        bufferDeleteSelection(view->buf, &view->cursor);
+        bufferDeleteSelection(buf, &view->cursor);
         editorSwitchMode(INSERT);
         if(mode == VISUAL)
           _arrMvmnt(view, ARROW_RIGHT, 1, INSERT);
-        else if (ec >= view->buf->row_size){
+        else if (ec >= buf->row_size){
           _arrMvmnt(view, '$', 1, INSERT);
-          bufferInsertNewLine(view->buf, &view->cursor);
+          bufferInsertNewLine(buf, &view->cursor);
         }
       }
       return ST_SUCCESS;
     case 'r':
       if(cmd->arg1 == 0) return ST_WAIT;
       if(cmd->arg1 >= 127) return ST_ERR;
-      bufferReplaceSelection(view->buf, cmd->arg1);
+      bufferReplaceSelection(buf, cmd->arg1);
       return ST_SUCCESS;
     case 'v':
       editorSwitchMode(mode==VISUAL?VISUAL_LINE:VISUAL);
@@ -407,13 +414,16 @@ int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
 
 void viewUpdateSelection(view_t *view, int mode, int flags){
   if(mode != VISUAL && mode != VISUAL_LINE) return;
-  bufferUpdateSelection(view->buf, view->cursor, mode, flags);
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  bufferUpdateSelection(buf, view->cursor, mode, flags);
 }
 void viewSwapSelCursor(view_t *view){
-  bufferSwapSelCursor(view->buf, &view->cursor);
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  bufferSwapSelCursor(buf, &view->cursor);
 }
 void viewDeleteSelection(view_t *view){
-  bufferDeleteSelection(view->buf, &view->cursor);
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  bufferDeleteSelection(buf, &view->cursor);
   view->st.cursx = view->cursor.x;
 }
 
@@ -423,15 +433,17 @@ void _drawStatusBar(view_t *view, abuf *ab){
   abAppend(ab, "\x1b[48;5;237m", 11);
 
   char lstatus[80], rstatus[80];
-  int len = snprintf(lstatus, sizeof(lstatus), "%.20s [%s] %.3s",
-                     view->buf->filename ? view->buf->filename : "[No name]",
-                     view->buf->syntax ? view->buf->syntax->filetype : "nt",
-                     view->buf->dirty ? "[+]" : "");
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  // TODO : truncate filename
+  int len = snprintf(lstatus, sizeof(lstatus), " %.20s [%s] %.3s",
+                     buf->filename ? buf->filename : "[No name]",
+                     buf->syntax ? buf->syntax->filetype : "nt",
+                     buf->dirty ? "[+]" : "");
   if (len > view->size.x)
     len = view->size.x;
 
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", view->cursor.y,
-                      view->buf->row_size, view->cursor.x);
+  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d ", view->cursor.y,
+                      buf->row_size, view->cursor.x);
 
 abAppend(ab, lstatus, len);
   for (; len < view->size.x - rlen; len++)
@@ -455,10 +467,11 @@ void _addWelcomeMsg(view_t *view, abuf *ab) {
 }
 
 void _arrMvmnt(view_t *view, int key, int times, int mode){
-  if(!view->buf || !view->buf->row_size) return;
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  if(!buf || !buf->row_size) return;
 
-  view->cursor.y = clamp(view->cursor.y, 0, view->buf->row_size-1);
-  int _rsz = view->buf->rows[view->cursor.y].size-(mode!=INSERT);
+  view->cursor.y = clamp(view->cursor.y, 0, buf->row_size-1);
+  int _rsz = buf->rows[view->cursor.y].size-(mode!=INSERT);
   switch (key) {
     case ARROW_LEFT:
       view->st.cursx = max(view->cursor.x-times, 0);
@@ -470,54 +483,58 @@ void _arrMvmnt(view_t *view, int key, int times, int mode){
       view->cursor.y = max(view->cursor.y-times, 0);
       break;
     case ARROW_DOWN:
-      view->cursor.y  = min(view->cursor.y+times, view->buf->row_size-1);
+      view->cursor.y  = min(view->cursor.y+times, buf->row_size-1);
       break;
     case '$':
-      view->cursor.y  = clamp(view->cursor.y+times-1, 0, view->buf->row_size);
-      view->st.cursx = view->buf->rows[view->cursor.y].size - (mode!=INSERT);
+      view->cursor.y  = clamp(view->cursor.y+times-1, 0, buf->row_size);
+      view->st.cursx = buf->rows[view->cursor.y].size - (mode!=INSERT);
       break;
     case '0':
       view->st.cursx = 0;
       break;
     case '_':
-      view->st.cursx = firstCharIndex(view->buf->rows[view->cursor.y].chars);
+      view->st.cursx = firstCharIndex(buf->rows[view->cursor.y].chars);
       break;
   }
   // cursor state preservation
-  _rsz = view->buf->rows[view->cursor.y].size-(mode!=INSERT);
+  _rsz = buf->rows[view->cursor.y].size-(mode!=INSERT);
   view->cursor.x = view->st.cursx;
   view->cursor.x = clamp(view->st.cursx, 0, _rsz);
 }
 
 void _pageMvmnt(view_t *view, int key){
-  if(!view->buf || !view->buf->row_size) return;
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  if(!buf || !buf->row_size) return;
 
   if (key == PAGE_UP) view->cursor.y = view->offset.y + settings.scrollpadding;
   else {
     view->cursor.y =
       view->offset.y + view->size.y - 1 - settings.scrollpadding;
-    if (view->cursor.y >= view->buf->row_size)
-      view->cursor.y = view->buf->row_size - 1;
+    if (view->cursor.y >= buf->row_size)
+      view->cursor.y = buf->row_size - 1;
   }
   int _times = view->size.y;
   _arrMvmnt(view, key == PAGE_UP ? ARROW_UP : ARROW_DOWN, _times, NORMAL);
 }
 
 void _absJmp(view_t *view, int line){
-  if(!view->buf || !view->buf->row_size) return;
-  view->cursor.y = min(line-1, view->buf->row_size-1);
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  if(!buf || !buf->row_size) return;
+  view->cursor.y = min(line-1, buf->row_size-1);
 }
 
 void _wrdJmp(view_t *view, int flags, int times){
-  while(times-- && bufferWordJump(view->buf, &view->cursor, flags)){}
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  while(times-- && bufferWordJump(buf, &view->cursor, flags)){}
   view->st.cursx = view->cursor.x;
 }
 
 void _miscJmp(view_t *view, int key){
-  if(!view->buf || !view->buf->row_size) return;
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  if(!buf || !buf->row_size) return;
   switch(key){
     case 'G':
-      view->cursor.y = view->buf->row_size-1;
+      view->cursor.y = buf->row_size-1;
       break;
     case 'H':
       view->cursor.y = settings.scrollpadding + view->offset.y;
@@ -527,5 +544,5 @@ void _miscJmp(view_t *view, int key){
         -settings.scrollpadding-STATUSBAR_SZ;
       break;      
   }
-  view->cursor.y = clamp(view->cursor.y, 0, view->buf->row_size-1);
+  view->cursor.y = clamp(view->cursor.y, 0, buf->row_size-1);
 }

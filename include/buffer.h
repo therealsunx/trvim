@@ -17,16 +17,6 @@ typedef struct {
 void initBuffer(buffer_t *buf);
 void freeBuffer(buffer_t *buf);
 
-/*
-void bufferUpdateLineColSz(buffer_t *buf);
-void bufferUpdateSize(buffer_t *buf, int sx, int sy);
-void addColumn(buffer_t *buf, abuf *ab, int linenum);
-void bufferDrawRows(buffer_t *buf, abuf *ab, int selflag);
-void bufferDrawStatusBar(buffer_t *buf, abuf *ab);
-void bufferShowCursor(buffer_t *buf);
-void bufferScroll(buffer_t *buf);
-*/
-
 int bufferWordJump(buffer_t *buf, vec2 *cursor, int flags);
 int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg);
 int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag);
@@ -42,7 +32,7 @@ void bufferInsertRow(buffer_t *buf, int index, char *s, size_t len);
 void bufferDeleteRows(buffer_t *buf, int index, int len);
 void bufferSwapRow(buffer_t *buf, int index1, int index2);
 
-void bufferOpenFile(buffer_t *buf, char *filename);
+int bufferOpenFile(buffer_t *buf, char *filename);
 void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch);
 void bufferInsertNewLine(buffer_t *buf, vec2 *cursor);
 void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir);

@@ -9,13 +9,14 @@ enum editorKeys {
 
   CTRL_A = CTRL_KEY('a'),
   CTRL_F = CTRL_KEY('f'),
+  CTRL_H = CTRL_KEY('h'),
+  CTRL_L = CTRL_KEY('l'),
 
   RETURN = '\r',
   CTRL_X = CTRL_KEY('x'),
   CTRL_Z = CTRL_KEY('z'),
 
   BACKSPACE = 127,
-  CTRL_H = CTRL_KEY('h'),
 
   ARROW_LEFT=1000,
   ARROW_RIGHT,

@@ -15,17 +15,17 @@ typedef struct {
 } state_t;
 
 typedef struct {
-  buffer_t* buf;
+  int buf_i;
   vec2 position, size;
   vec2 cursor, offset;
   int render_cx, lcols;
   state_t st;
 } view_t;
 
-void initView(view_t *view, buffer_t *buf, vec2 size, vec2 position);
+void initView(view_t *view, int buf_i, vec2 size, vec2 position);
 
 void viewSetDims(view_t *view, vec2 size, vec2 position);
-void viewSetBuffer(view_t *view, buffer_t *buf);
+void viewSetBuffer(view_t *view, int buf_i);
 
 void viewDraw(view_t *view, int selflag);
 void viewShowCursor(view_t *view, int mode);

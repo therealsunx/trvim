@@ -101,60 +101,6 @@ void _editorSzUpdtcb(void) {
 
 int editorReadKey(void) { return readKey(_editorSzUpdtcb); }
 
-/*
-void editorProcessKeyPress(void) {
-int c = editorReadKey();
-
-buffer_t *buf = editorGetCurrentBuffer();
-
-if(buf->row_size == 0){
-  switch(c){
-    case 'i':
-    case 'I':
-    case 'a':
-    case 'A':
-      editor.mode = INSERT;
-      bufferInsertRow(buf, 0, "", 0);
-      break;
-    case 'o':
-      editor.mode = INSERT;
-      bufferInsertRow(buf, 0, "", 0);
-      bufferInsertNewLine(buf);
-      break;
-    case 'O':
-      editor.mode = INSERT;
-      bufferInsertRow(buf, 0, "", 0);
-      bufferInsertRow(buf, 1, "", 0);
-      break;
-  }
-  return;
-}
-
-switch (c) {
-  case HOME_KEY:
-    if(buf->row_size == 0) return;
-    bufferGotoEnd(buf, editor.mode, JMP_BACK);
-    break;
-  case END_KEY:
-    if(buf->row_size == 0) return;
-    bufferGotoEnd(buf, editor.mode, 0);
-    break;
-
-  case PAGE_UP:
-  case PAGE_DOWN:
-    if(buf->row_size == 0) return;
-    bufferPageScroll(buf, c);
-    break;
-
-  default:
-    if (editor.mode == INSERT) editorInsertModeKeyProc(c);
-    else editorNormalModeKeyProc(c);
-  }
-//if(editor.mode == VISUAL_LINE || editor.mode == VISUAL)
-  //bufferUpdateSelection(buf, editor.mode, 1);
-}
-*/
-
 void editorProcessKeyPress(void) {
   int c = editorReadKey();
 
@@ -196,6 +142,12 @@ void editorProcessKeyPress(void) {
   }
 
   if (editor.mode == NORMAL) {
+    cmd_st = windowOpCmdHandle(&editor.window, &pc);
+    if(cmd_st != ST_NOOP){
+      emptyStack(&editor.cmdstk);
+      return;
+    }
+
     cmd_st = viewInsCmdHandle(view, pc.cmd);
     if (cmd_st != ST_NOOP) {
       if(cmd_st == ST_SUCCESS) editorSwitchMode(INSERT);
@@ -225,235 +177,25 @@ void editorProcessKeyPress(void) {
   }
 }
 
-/*
-void editorNormalModeKeyProc(int c) {
-  static int qcount = 2;
-  switch (c) {
-  case CTRL_Z:
-    if (windowDirtyBufCheck(&editor.window) && --qcount) {
-      editorSetStatusMsg(
-          "WARNING! unchanged changes. Press CTRL-Z again to force quit");
-      return;
-    }
-    exit(0);
-    break;
+int editorEditFileCommand(char *cmd){
+  int _cl = strlen(cmd);
+  if(_cl <= 2) return 0;
+  if(cmd[0] != 'e' || cmd[1] != ' ') return 0;
 
-  default:
-    push(&editor.cmdstk, c);
-  }
-  editorProcessCommand();
-  qcount = 2;
+  char *filename = &cmd[2];
+  editorOpen(filename);
+  return 1;
 }
-
-void editorProcessCommand(void) {
-  parsedcmd_t pc = parseCommand(&editor.cmdstk);
-  if (!pc.repx)
-    pc.repx++;
-  // take action
-
-  buffer_t *buf = editorGetCurrentBuffer();
-
-  if (editor.mode == NORMAL) { // only specific to normal mode
-    int success = 1;
-    switch (pc.cmd) {
-    case 'i':
-      editorSwitchMode(INSERT);
-      break;
-    case 'I':
-      buf->cursor.x = firstCharIndex(buf->rows[buf->cursor.y].chars);
-      buf->st.cursx = buf->cursor.x;
-      editorSwitchMode(INSERT);
-      break;
-    case 'a':
-      editorSwitchMode(INSERT);
-      bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
-      break;
-    case 'A':
-      editorSwitchMode(INSERT);
-      bufferGotoEnd(buf, editor.mode, 0);
-      break;
-    case 'o':
-      editorSwitchMode(INSERT);
-      bufferGotoEnd(buf, editor.mode, 0);
-      bufferInsertNewLine(buf);
-      break;
-    case 'O':
-      editorSwitchMode(INSERT);
-      bufferGotoEnd(buf, editor.mode, 0);
-      bufferInsertNewLine(buf);
-      buf->cursor.y--;
-      bufferSwapRow(buf, buf->cursor.y, buf->cursor.y + 1);
-      break;
-    case 'r':
-      if (pc.arg1 == 0)
-        return;
-      if (pc.arg1 < 127)
-        bufferReplaceChar(buf, pc.arg1, pc.repx);
-      break;
-    case 'v':
-      editorSwitchMode(VISUAL);
-      break;
-    case 'V':
-      editorSwitchMode(VISUAL_LINE);
-      break;
-    default:
-      success = 0;
-    }
-    if (success) {
-      emptyStack(&editor.cmdstk);
-      return;
-    }
-  }
-
-  if (editor.mode == VISUAL || editor.mode == VISUAL_LINE) {
-    // TODO : visual mode specific keybinds
-    int success = 1;
-    switch (pc.cmd) {
-    case CTRL_C:
-    case ESCAPE:
-      editorSwitchMode(NORMAL);
-      break;
-    case 'o':
-    case 'O':
-      bufferSwapSelCursor(buf);
-      break;
-    case 'd':
-    case 'x':
-      bufferDeleteSelection(buf);
-      editorSwitchMode(NORMAL);
-      break;
-    case 'c': {
-      int ec = buf->cursor.y;
-      bufferDeleteSelection(buf);
-      editorSwitchMode(INSERT);
-      if (editor.mode == VISUAL)
-        bufferMoveCursor(buf, ARROW_RIGHT, editor.mode, 1);
-      else if (ec >= buf->row_size) {
-        bufferGotoEnd(buf, editor.mode, 0);
-        bufferInsertNewLine(buf);
-      }
-    } break;
-    case 'r':
-      if (pc.arg1 == 0)
-        return;
-      if (pc.arg1 < 127)
-        bufferReplaceSelection(buf, pc.arg1);
-      break;
-    case 'v':
-      editor.mode = editor.mode == VISUAL_LINE ? VISUAL : VISUAL_LINE;
-      break;
-    default:
-      success = 0;
-    }
-    if (success) {
-      emptyStack(&editor.cmdstk);
-      return;
-    }
-  }
-
-  switch (pc.cmd) { // both normal and visual mode
-  case '/':
-    emptyStack(&editor.cmdstk);
-    editorFind("/%s");
-    break;
-  case '0':
-    bufferGotoEnd(buf, editor.mode, JMP_BACK);
-    break;
-  case '_':
-    buf->cursor.x = firstCharIndex(buf->rows[buf->cursor.y].chars);
-    buf->st.cursx = buf->cursor.x;
-    break;
-  case '$':
-    buf->cursor.y += pc.repx - 1;
-    bufferGotoEnd(buf, editor.mode, 0);
-    break;
-  case '}':
-    while (pc.repx-- && bufferParaNav(buf, 0)) {
-    }
-    break;
-  case '{':
-    while (pc.repx-- && bufferParaNav(buf, JMP_BACK)) {
-    }
-    break;
-  case 'w':
-    while (pc.repx-- && bufferWordJump(buf, 0)) {
-    }
-    break;
-  case 'W':
-    while (pc.repx-- && bufferWordJump(buf, JMP_PUNC)) {
-    }
-    break;
-  case 'e':
-    while (pc.repx-- && bufferWordJump(buf, JMP_END)) {
-    }
-    break;
-  case 'E':
-    while (pc.repx-- && bufferWordJump(buf, JMP_END | JMP_PUNC)) {
-    }
-    break;
-  case 'b':
-    while (pc.repx-- && bufferWordJump(buf, JMP_BACK)) {
-    }
-    break;
-  case 'B':
-    while (pc.repx-- && bufferWordJump(buf, JMP_BACK | JMP_PUNC)) {
-    }
-    break;
-
-  case 'h':
-  case 'j':
-  case 'k':
-  case 'l':
-  case ARROW_LEFT:
-  case ARROW_RIGHT:
-  case ARROW_UP:
-  case ARROW_DOWN:
-    bufferMoveCursor(buf, pc.cmd, editor.mode, pc.repx);
-    break;
-
-  case 'G':
-    buf->cursor.y = buf->row_size - 1;
-    buf->cursor.x = clamp(buf->cursor.x, 0, buf->rows[buf->cursor.y].size - 1);
-    break;
-  case 'J':
-    bufferAbsoluteJump(buf, pc.repx);
-    break;
-  case 'H':
-    buf->cursor.y = buf->offset.y + settings.scrollpadding;
-    if (buf->cursor.y >= buf->row_size)
-      buf->cursor.y = buf->row_size - 1;
-    break;
-  case 'L':
-    buf->cursor.y = buf->offset.y + buf->size.y - 1 - settings.scrollpadding;
-    if (buf->cursor.y >= buf->row_size)
-      buf->cursor.y = buf->row_size - 1;
-    break;
-
-  case ':':
-    emptyStack(&editor.cmdstk);
-    editorCmdPromptProc(":%s");
-    break;
-  case 'f':
-    if (pc.arg1 == 0)
-      return;
-    while (pc.repx-- && bufferFindChar(buf, pc.arg1, 0)) {
-    }
-    break;
-  case 'F':
-    if (pc.arg1 == 0)
-      return;
-    while (pc.repx-- && bufferFindChar(buf, pc.arg1, JMP_BACK)) {
-    }
-    break;
-
-  case 0:
-    return;
-  default:
-    break;
-  }
-  emptyStack(&editor.cmdstk);
+int editorAddNewView(char *cmd){
+  int _cl = strlen(cmd);
+  if(_cl<2) return 0;
+  if(cmd[1] != 's') return 0;
+  if(cmd[0] == 'v'){
+    windowAddView(&editor.window);
+    return 1;
+  } // TODO: maybe later implement horizontal split
+  return 0;
 }
-*/
 
 void editorCmdPromptProc(char *prompt) {
   char *cmd = editorPrompt(prompt ? prompt : "Enter command:", NULL);
@@ -479,6 +221,9 @@ void editorCmdPromptProc(char *prompt) {
     editorSetStatusMsg("\x1b[91m Not an command during vis. mode: %s\x1b[0m", cmd);
     return;
   }
+
+  if(editorEditFileCommand(cmd)) return;
+  if(editorAddNewView(cmd)) return;
 
   while (i < _cl) {
     if (cmd[i] == 'w') {
@@ -518,45 +263,13 @@ void editorCmdPromptProc(char *prompt) {
   editorSaveQuitBuffers(_cmdtype);
 }
 
-/*
-void editorInsertModeKeyProc(int c) {
-  buffer_t *buf = editorGetCurrentBuffer();
-  switch (c) {
-  case RETURN:
-    bufferInsertNewLine(buf);
-    break;
-  case BACKSPACE:
-  case CTRL_H:
-    bufferDelChar(buf, -1);
-    break;
-  case DEL_KEY:
-    bufferDelChar(buf, 0);
-    break;
-
-  case ARROW_LEFT:
-  case ARROW_RIGHT:
-  case ARROW_UP:
-  case ARROW_DOWN:
-    bufferMoveCursor(buf, c, editor.mode, 1);
-    break;
-
-  case CTRL_C:
-  case ESCAPE:
-    editorSwitchMode(NORMAL);
-    break;
-  default:
-    bufferInsertChar(buf, c);
-    break;
-  }
-}
-*/
-
 void editorSwitchMode(int mode) {
   if (mode == NORMAL) editor.cmdbar.msg_t = 0;
   editor.mode = mode;
 }
-
-void editorOpen(char *filename) { windowOpenFile(&editor.window, filename); }
+void editorOpen(char *filename) {
+  windowOpenFile(&editor.window, filename);
+}
 
 void editorSaveBuffer(buffer_t *buf) {
   if (buf->filename == NULL) {
@@ -573,20 +286,18 @@ void editorSaveBuffer(buffer_t *buf) {
     editorSetStatusMsg("%d bytes written to disk", _sz);
 }
 
-void editorSaveQuitBuffers(int flags) {
-  // TODO: multiple buffers handling ....
-  buffer_t *buf = editorGetCurrentBuffer();
-  if (flags & CMD_WRITE)
-    editorSaveBuffer(buf);
-
-  if ((flags & CMD_QUIT)) {
-    if (buf->dirty && !(flags & CMD_FORCE)) {
-      editorSetStatusMsg(
-          "\x1b[91m Unsaved Changes. Use q! to force quit buffer_t. \x1b[0m");
-    } else {
-      exit(0);
-    }
+void editorSaveQuitBuffers(int flags){
+  if(flags&CMD_WRITE){
+    windowSaveBuffers(&editor.window, flags&CMD_ALL);
   }
+  if(flags&CMD_QUIT){
+    if (windowDirtyBufCheck(&editor.window) && !(flags&CMD_FORCE)) {
+      editorSetStatusMsg( "\x1b[91m Unsaved Changes. Use q! to force quit buffer_t. \x1b[0m");
+      return;
+    }
+    windowQuitBuffers(&editor.window, flags&CMD_ALL);
+  }
+  if(windowShouldClose(&editor.window)) exit(0);
 }
 
 char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
@@ -636,7 +347,7 @@ void editorFindCallback(char *query, int key) {
   static unsigned char *_st_hl = NULL;
 
   view_t *view = editorGetCurrentView();
-  buffer_t *_cbuf = view->buf;
+  buffer_t *_cbuf = editorGetCurrentBuffer();
 
   if (_st_hl) {
     memcpy(_cbuf->rows[_st_hlind].hlchars, _st_hl,
@@ -684,3 +395,4 @@ void editorFind(char *prompt) {
     view->offset = _st_off;
   }
 }
+

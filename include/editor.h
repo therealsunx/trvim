@@ -28,7 +28,11 @@ void editorProcessKeyPress(void);
 void editorNormalModeKeyProc(int key);
 void editorInsertModeKeyProc(int key);
 void editorProcessCommand(void);
+
 void editorCmdPromptProc(char *prompt);
+int editorEditFileCommand(char *cmd);
+int editorAddNewView(char *cmd);
+
 void editorSaveQuitBuffers(int flags);
 void editorSwitchMode(int mode);
 void editorSaveBuffer(buffer_t *buf);

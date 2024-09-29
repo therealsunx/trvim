@@ -30,171 +30,6 @@ void freeBuffer(buffer_t *buf){
   free(buf->filename);
 }
 
-/*
-void addColumn(buffer_t *buf, abuf *ab, int linenum){
-  char _lstr[32];
-  int val = linenum+1, len;
-
-  int _nsz = buf->linenumcol_sz-2; // one bar & one col
-  abAppend(ab, "\x1b[48;5;237m \x1b[m\x1b[90m", 20);
-
-  if(linenum < buf->row_size){
-    if(settings.flags&REL_LINENUM && linenum!=buf->cursor.y){
-      val -= buf->cursor.y+1;
-      if(val<0) val=-val;
-    }
-    len = linenum==buf->cursor.y ?
-      snprintf(_lstr, sizeof(_lstr), "\x1b[33m%-*d ", _nsz, val):
-      snprintf(_lstr, sizeof(_lstr), "%*d ", _nsz, val);
-  } else {
-    len = snprintf(_lstr, sizeof(_lstr), "%*s ", _nsz, "~");
-  }
-  abAppend(ab, _lstr, len);
-  abAppend(ab, "\x1b[m", 3);
-}
-
-void bufferDrawRows(buffer_t *buf, abuf *ab, int selflag) {
-  vec2 sstate = {BEFORE, BEFORE}; // for selection mode
-  boundstype sel = buf->selection;
-  if(selflag){
-    sel.end.x = rowCursorToRenderX(&buf->rows[sel.end.y], sel.end.x);
-    sel.start.x = rowCursorToRenderX(&buf->rows[sel.start.y], sel.start.x);
-  }
-
-  for (int y = 0; y < buf->view_size.y; y++) {
-    int _fr = y + buf->offset.y;
-
-    // --- line number column ---
-    addColumn(buf, ab, _fr);
-
-    if (_fr >= buf->row_size) {
-      if (buf->row_size == 0 && y == buf->view_size.y / 3)
-        addWelcomeMsg(buf, ab);
-    } else {
-
-      // render according to metadata
-      int len = clamp(buf->rows[_fr].rsize - buf->offset.x, 0, buf->size.x);
-
-      char *ch = &buf->rows[_fr].renderchars[buf->offset.x];
-      unsigned char *hl = &buf->rows[_fr].hlchars[buf->offset.x];
-      int _ptk = TK_NORMAL;
-
-      // selection mode processing
-      if(selflag){
-        if(sstate.y == BEFORE){
-          if(_fr>=sel.start.y) sstate.y = INBOUND;
-        } else if(sstate.y == INBOUND){
-          if(_fr > sel.end.y) sstate.y = AFTER;
-        } // no need to process after AFTER
-      }
-
-      for (int i = 0; i < len; i++) {
-
-        // token highlighing
-        int _clr = hlTokentoColorIndex(hl[i]);
-        if (hl[i] != _ptk) {
-          if (_ptk == TK_MATCH || _ptk == TK_KEYWORD3)
-            abAppend(ab, "\x1b[m", 3);
-
-          char _tcstr[24];
-          int _cl;
-          switch (hl[i]) {
-            case TK_MATCH:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[48;5;%dm\x1b[38;5;%dm", _clr, 0);
-              break;
-            case TK_KEYWORD3:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[1m\x1b[38;5;%dm", _clr);
-              break;
-            default:
-              _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
-          }
-
-          abAppend(ab, _tcstr, _cl);
-          _ptk = hl[i];
-        }
-
-        // selection mode highlighting
-        if(sstate.y == INBOUND){
-          if(sstate.x == BEFORE){
-            if(i>=sel.start.x){
-              sstate.x = INBOUND;
-              abAppend(ab, "\x1b[100m", 6);
-            }
-          } else if(sstate.x == INBOUND){
-            if(_fr == sel.end.y && i>sel.end.x){
-              sstate.x = AFTER;
-              abAppend(ab, "\x1b[49m", 5);
-            }
-          } // no need to process after AFTER
-
-          if(i==0 && sstate.x == INBOUND){
-            abAppend(ab, "\x1b[100m", 6);
-          }
-        }
-
-        abAppend(ab, &ch[i], 1);
-      }
-    }
-    abAppend(ab, "\x1b[m\x1b[K", 6); // clear the line before drawing
-    abAppend(ab, "\r\n", 2);
-  }
-}
-
-
-void bufferDrawStatusBar(buffer_t *buf, abuf *ab) {
-  abAppend(ab, "\x1b[48;5;237m", 11);
-
-  char lstatus[80], rstatus[80];
-  int len = snprintf(lstatus, sizeof(lstatus), "%.20s [%s] %.3s",
-                     buf->filename ? buf->filename : "[No name]",
-                     buf->syntax ? buf->syntax->filetype : "nt",
-                     buf->dirty ? "[+]" : "");
-  if (len > buf->view_size.x)
-    len = buf->view_size.x;
-
-  int rlen = snprintf(rstatus, sizeof(rstatus), "%d|%d, %d", buf->cursor.y,
-                      buf->row_size, buf->cursor.x);
-
-  abAppend(ab, lstatus, len);
-  for (; len < buf->view_size.x - rlen; len++)
-    abAppend(ab, " ", 1);
-  abAppend(ab, rstatus, rlen);
-
-  abAppend(ab, "\r\n", 2);
-  abAppend(ab, "\x1b[m", 3);
-}
-
-void bufferShowCursor(buffer_t *buf) {
-  showCursor(
-      buf->cursor.y - buf->offset.y + 1,
-      buf->render_x - buf->offset.x + buf->linenumcol_sz + 1);
-}
-
-void bufferScroll(buffer_t *buf) {
-  int _cy = buf->cursor.y - buf->offset.y;
-
-  // vertical scroll handler
-  if (_cy > (buf->view_size.y - 1 - settings.scrollpadding))
-    buf->offset.y = buf->cursor.y - buf->view_size.y + settings.scrollpadding + 1;
-  else if (_cy < settings.scrollpadding) {
-    buf->offset.y = buf->cursor.y - settings.scrollpadding;
-    if (buf->offset.y < 0)
-      buf->offset.y = 0;
-  }
-
-  // horizontal scroll handler
-  buf->render_x =
-      buf->cursor.y < buf->row_size
-          ? rowCursorToRenderX(&buf->rows[buf->cursor.y], buf->cursor.x)
-          : 0;
-  int _cx = buf->render_x - buf->offset.x;
-  if (_cx >= buf->view_size.x - buf->linenumcol_sz - 1)
-    buf->offset.x = buf->render_x - buf->view_size.x + buf->linenumcol_sz + 1;
-  else if (_cx < 0)
-    buf->offset.x = buf->render_x;
-}
-*/
-
 void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags){
   if(!flags){
     buf->selection.start = cursor;
@@ -411,16 +246,16 @@ void bufferDeleteRows(buffer_t *buf, int index, int len) {
   //bufferUpdateLineColSz(buf); TODO
 }
 
-void bufferOpenFile(buffer_t *buf, char *filename) {
+int bufferOpenFile(buffer_t *buf, char *filename) {
   free(buf->filename);
-  buf->filename = strdup(filename);
 
-  FILE *fp = fopen(buf->filename, "r");
+  FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fp = fopen(buf->filename, "w");
-    if(!fp) die("failed to open file");
+    fp = fopen(filename, "w");
+    if(!fp) return 0;
   }
 
+  buf->filename = strdup(filename);
   bufferSelectSyntax(buf);
 
   char *line = NULL;
@@ -436,6 +271,7 @@ void bufferOpenFile(buffer_t *buf, char *filename) {
   free(line);
   fclose(fp);
   buf->dirty = 0;
+  return 1;
 }
 
 void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch) {
@@ -586,7 +422,7 @@ void bufferSelectSyntax(buffer_t *buf) {
   if (buf->filename == NULL)
     return;
 
-  char *_extn = strchr(buf->filename, '.');
+  char *_extn = strchr(buf->filename, '.'); // TODO : get extension properly
   for (int j = 0; j < HLDB_SIZE; j++) {
     syntaxhl *s = &HLDB[j];
     int i = 0;
