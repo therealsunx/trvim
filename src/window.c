@@ -106,7 +106,7 @@ void windowRemoveView(window_t *window){
   window->vcount--;
   memmove(&window->views[window->active_i],
       &window->views[window->active_i+1],
-      (window->vcount-window->active_i-1)*sizeof(view_t));
+      (window->vcount-window->active_i)*sizeof(view_t));
   window->active_i =clamp(window->active_i, 0, window->vcount-1);
   _onSizeUpdate(window);
 }
