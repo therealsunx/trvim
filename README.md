@@ -3,8 +3,30 @@
     <img src="trvim.png" />
 </p>
 
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Syntax Highlighting](#syntax-highlighting)
+  - [Supported Programming Languages](#supported-programming-languages)
+  - [Syntax Flags](#syntax-flags)
+- [Getting Started](#getting-started)
+  - [Installation](#installation)
+- [Customization & Test](#customization--test)
+- [License](#license)
+- [User Guide](#user-guide)
+  - [Movement and Navigation](#movement-and-navigation)
+  - [Mode Switching](#mode-switching)
+  - [Insert Mode](#insert-mode)
+  - [Visual/Selection Mode](#visualselection-mode)
+  - [Search & Find](#search--find)
+  - [Command Mode](#command-mode)
+  - [Buffer and View Management](#buffer-and-view-management)
+  - [Command Replication](#command-replication)
+
 ### **Overview**
 **trvim** - is a text editor built in C, it is fast and is similiar in operation to vim. It uses the power of non-canonical terminal to provide quick, robust and easy operation. It supports features like syntax highlighting, auto-indentation, cross-platform use, zero-mouse-need movement bindings, etc.
+
+Install and use it. Installation method and User Guide is provided below.
 ___Enjoy !!___
 
 
@@ -107,123 +129,125 @@ ___Use it just like you use vim.___
 ## **License**
 This project is licensed under whatever it is used in `LICENSE` file. I copied it from my another project. Ignore any mistakes. See the `LICENSE` file for more information.
 
+# User Guide
+Below are very simple to understand & intuitive commands for doing different things. The power does not come from individual commands. Its the combination of commands that makes your work faster.
 
-## Features-List(for you) : TODO board (for me)
-___Completed features are marked with =
-Undergoing features are marked with .
-I still have to make a good looking table instead of list for this section. SO, ignore inconsistencies like a good programmer.___
+## Movement and Navigation
 
-- = movement
-- = editing
-- = scroll
-- = prompted incremental search
-- = open & save file
-- = buffer status bar
-- = editor command & msg bar
-- = normal editing
-- = syntax higlighting
-    - = functions
-    - = preprocessor directives
-    - = comments
-    - = strings
-    - = numbers
-    - = data members
-    - = punctuations
-    - = keywords
-    - = escape characters in string
-    - = 8bit colors instead of 4 bits
-    - = default highlights in any type
-- = absolute and relative line number
-- = status msg bar
-    - = mode indicator
-    - = command buffer
-- = vim operation modes
-    - = normal mode
-        - = command parsing
-        - = mode switching
-            - = insert mode
-                - = i : cursor on left
-                - = a : cursor on right
-                - = I : cursor to starting character of line
-                - = A : cursor to end of line
-                - = o : add new line below and go to it
-                - = O : add new line below but stay on current one
-            - = select mode
-                - = v : normal selection mode
-                - = V : line selectio= mode
-        - = '/' key find string
-            - arrow up/down key during search to go to next/previous one
-        - = f : find character after cursor
-        - = F : find character before cursor
-        - = r : replace character with next one
-        - = $ : go to end of line
-        - = 0 : go to start of line
-        - = : : internal command prompt
-            - = :{n} : go to line number n
-            - = :w : save the current buffer into the file
-            - = :wa : save all buffers into the file
-            - = :q : quit current buffer
-            - = :qa : quit all buffers
-            - = :wq : save and quit current buffer
-            - = :wqa : save and quit all buffers
-            - = force quit buffers using ! at end of quit command
-                - e.g. q! force quits current buffer and qa! force quits all buffers
-        - = word navigation
-            - = w : next word
-            - = W : next word (ignore punctuations)
-            - = b : previous word
-            - = B : previous word (ignore punctuations)
-            - = e : end of word
-            - = E : end of word ignore punctutations
-        - = paragraph navigation
-            - = { : previous paragraph end
-            - = } : next paragraph end
-        - = absolute line jumps : {n}J : jump to line 'n'
-        - = quick page navigation : fast cursor jumps for efficient work
-            - = G : go to  last line of file
-            - = H : move cursor towards beginning of visible page
-            - = L : move cursor towards end of visible page
-						- = _ : move cursor to first character in the line
-        - = movement keybinds
-            - h : left
-            - j : down
-            - k : up
-            - l : right
-        - = relative jumps
-            - {n}(h|j|k|l) = n times (h|j|k|l)
-            - e.g. 12j = jump down 12 lines
-        - = command replication
-            - type some number and then command to replicate it
-            - e.g. relative jumps (as described above)
-            - e.g. {n}w go to nth next word : 3w = go to 3rd word next to cursor 
-            - e.g. {n}f{char} goes to nth next {char} character in current line
-                - 3fc : go to 3rd 'c' away from cursor
-            - e.g. {n}$ go to end of nth line below cursor
-    - = insert mode
-        - = auto indentation
-        - = cursor range increase
-        - = thin cursor
-        - = arrow based movements
-    - = visual/selection mode
-				- = visual mode : select character/word-wise
-				- = visual-line mode : select lines
-        - = continous selection
-        - = highlight selection
-        - = navigation : same as normal mode(but selects items along the way) except some special keybinds
-            - = Esc or Ctrl_C : switch to normal mode
-            - = o or O : move cursor to different end of selection
-            - = v : switch between visual and visual line mode
-        - = d or x : delete selection
-        - = c : cut selection (delete & switch to insert mode)
-        - = r {character} : replace selection with following character
-- = bufferize the editor
-    - = views for buffers
-    - = split {n} views in single screen
-    - = keybinds for opening & editing views & buffers inside editor
-        - = :e {filename} opens the file in buffer and shows in current view
-        - = p and n to switch to previous and next buffers in the list in the current view
-        - = \[ and \] navigates to left and right views
-        - = < and > decreases and increases size of split view
-            - = {n}> will increase width by n units
-            - = > will increase width by a chunk (20 units as of now)
+### Basic Movement
+- `h` : Move left
+- `j` : Move down
+- `k` : Move up
+- `l` : Move right
+- `{n}(h|j|k|l)` : Move `n` times in the specified direction (e.g., `12j` moves down 12 lines)
 
+### Line Navigation
+- `$` : Go to the end of the line
+- `0` : Go to the start of the line
+- `_` : Move cursor to the first character in the line
+
+### Word Navigation
+- `w` : Move to the beginning of the next word
+- `W` : Move to the next word, ignoring punctuation
+- `b` : Move to the beginning of the previous word
+- `B` : Move to the previous word, ignoring punctuation
+- `e` : Move to the end of the current word
+- `E` : Move to the end of the word, ignoring punctuation
+
+### Paragraph Navigation
+- `{` : Move to the beginning of the previous paragraph
+- `}` : Move to the end of the next paragraph
+
+### Quick Page Navigation
+- `G` : Move to the last line of the file
+- `H` : Move towards the beginning of the visible page
+- `L` : Move towards the end of the visible page
+
+### Absolute Line Jumps
+- `{n}J` : Jump to line `n`
+
+### Relative Line Jumps
+- `{n}$` : Go to the end of the `n`th line below the cursor
+
+## Mode Switching
+
+### Normal Mode (Default)
+- **Insert Mode**
+  - `i` : Switch to insert mode
+  - `a` : Switch to insert mode & move cursor to right
+  - `I` : Switch to insert mode &  move cursor at the start of the line
+  - `A` : Switch to insert mode & move cursor to the end of the line
+  - `o` : Add a new line below and switch to insert mode
+  - `O` : Add a new line above and switch to insert mode
+
+- **Select Mode**
+  - `v` : Switch to visual mode (select character-wise)
+  - `V` : Switch to visual line mode (select lines)
+
+## Insert Mode
+- `Esc` or `Ctrl+C` : Return to normal mode
+- **Auto Indentation** and **Arrow-Based Movements** available
+
+## Visual/Selection Mode
+In this mode you can do almost everything as same as normal mode, but it will select asyou go.
+
+- **Basic Selection**
+  - `v` : Enter visual mode (character/word selection)
+  - `V` : Enter visual line mode (select full lines)
+  
+- **Movement in Visual Mode**
+  - Use the same navigation as normal mode, selecting text as you go
+  - `o` or `O` : Move cursor to the other end of the selection
+  - `Esc` or `Ctrl+C` : Return to normal mode
+
+- **Actions**
+  - `d` or `x` : Delete the selection
+  - `c` : Cut selection and enter insert mode
+  - `r {character}` : Replace selection with the specified character
+  - `C` : Comment the current selection
+
+## Search & Find
+- `/` : Enter search mode (type to search and navigate with arrow keys)
+- `f {char}` : Find the next occurrence of `{char}` after the cursor in the current line
+- `F {char}` : Find the next occurrence of `{char}` before the cursor in the current line
+
+## Command Mode
+- `:` : Enter command prompt (for advanced operations)
+  - `:{n}` : Go to line number `n`
+  - `:w` : Save the current buffer to the file
+  - `:wa` : Save all buffers to files
+  - `:q` : Quit the current buffer
+  - `:qa` : Quit all buffers
+  - `:wq` : Save and quit the current buffer
+  - `:wqa` : Save and quit all buffers
+  - Append `!` to force quit/save (e.g., `:q!`, `:qa!`)
+
+## Buffer and View Management
+
+### Buffer Commands
+- `:e {filename}` : Open `{filename}` in a buffer and display in the current view
+- `p` / `n` : Switch to the previous/next buffer in the current view
+
+### Split View
+- Split the screen into `{n}` views
+- `[` / `]` : Move to the left/right view
+- `<` / `>` : Decrease/increase the size of the current view
+  - `{n}>` : Increase the width by `n` units
+  - `>` : Increase the width by a chunk (default: 20 units)
+
+## Command Replication
+- **Number Prefix**: Precede a command with a number to repeat it
+  - `{n}w` : Move to the `n`th next word (e.g., `3w` moves to the third word ahead)
+  - `{n}f{char}` : Go to the `n`th occurrence of `{char}` (e.g., `3fc` moves to the third `c` from the cursor)
+  - `{n}$` : Go to the end of the `n`th line below
+
+## Examples
+Take a look at following examples along with guide toget hold of it.
+e.g.1. `ea` will go to end of word and start writing after that.
+e.g.2. `VC` will comment current line, `V2jC` will comment 3 lines
+e.g.3. `{V}C` will comment the paragraph. (breakdown: `{` moves to empy line before paragraph, `V` switches to selection/visual mode, `}` moves to next end of paragraph, and `C` will comment all selected lines)
+e.g.4. `wverc` will go to next word and replace it with c. It seems hard knowing this command but breaking it down will make you understand that it is not even a bit hard. `w` will go to start of next word, `v` will switch to selection/visual mode, `e` will go to end of word, (notice that the word will get highlighted now), `rc` will replace selection with c.
+e.g.5. similiarly, `wvec` will cut the next word and also switches to insert mode, so you can write something in its place instead.
+
+Easy right !!
+_(Note: you can enable such movement bindings on code editors like VS code by installing VIM extensions)_
