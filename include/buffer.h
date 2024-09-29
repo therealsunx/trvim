@@ -26,6 +26,7 @@ void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags);
 void bufferSwapSelCursor(buffer_t *buf, vec2 *cursor);
 void bufferDeleteSelection(buffer_t *buf, vec2 *cursor);
 void bufferReplaceSelection(buffer_t *buf, char c);
+void bufferCommentSelection(buffer_t *buf);
 
 void bufferUpdateRow(buffer_t *buf, erow *row);
 void bufferInsertRow(buffer_t *buf, int index, char *s, size_t len);

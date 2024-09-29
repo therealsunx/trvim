@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "buffer.h"
+#include "editor.h"
 #include "settings.h"
 
 extern settings_t settings;
@@ -111,6 +112,22 @@ void bufferReplaceSelection(buffer_t *buf, char c){
       rowReplaceCharacter(row, c, 0, row->size);
       bufferUpdateRow(buf, row);
     }
+  }
+}
+
+void bufferCommentSelection(buffer_t *buf){
+  char *cmnt;
+  if(buf->syntax) cmnt = buf->syntax->cmnt_1ls;
+  else cmnt = editorPrompt("Comment syntax > %s", NULL);
+  if(!cmnt) return;
+
+  int _nc = strlen(cmnt);
+  for(int i=buf->selection.start.y; i<=buf->selection.end.y && i<buf->row_size; i++){
+    erow *row = &buf->rows[i];
+    for(int j=0; j<_nc; j++){
+      rowInsertCharacter(row, j, cmnt[j]);
+    }
+    bufferUpdateRow(buf, row);
   }
 }
 
@@ -243,7 +260,6 @@ void bufferDeleteRows(buffer_t *buf, int index, int len) {
           (buf->row_size - index - len) * sizeof(erow));
   buf->row_size-=len;
   buf->dirty++;
-  //bufferUpdateLineColSz(buf); TODO
 }
 
 int bufferOpenFile(buffer_t *buf, char *filename) {
@@ -267,7 +283,6 @@ int bufferOpenFile(buffer_t *buf, char *filename) {
       llen--;
     bufferInsertRow(buf, buf->row_size, line, llen);
   }
-  //bufferUpdateLineColSz(buf); TODO
   free(line);
   fclose(fp);
   buf->dirty = 0;
@@ -304,7 +319,6 @@ void bufferInsertNewLine(buffer_t *buf, vec2 *cursor) {
     bufferUpdateRow(buf, row);
   }
   buf->dirty++;
-  //bufferUpdateLineColSz(buf); TODO
 }
 
 void bufferSwapRow(buffer_t *buf, int index1, int index2){
@@ -341,9 +355,7 @@ void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir){
   }
   row = &buf->rows[cursor->y];
   bufferUpdateRow(buf, row);
-  //buf->st.cursx = cursor->x;
   buf->dirty++;
-  //bufferUpdateLineColSz(buf);
 }
 
 char *bufferRowtoStr(buffer_t *buf, int *buflen) {
@@ -363,7 +375,6 @@ char *bufferRowtoStr(buffer_t *buf, int *buflen) {
 }
 
 int bufferSave(buffer_t *buf) {
-  // buffer_t should have filename
   if (!buf->filename)
     return -1;
 
@@ -422,7 +433,8 @@ void bufferSelectSyntax(buffer_t *buf) {
   if (buf->filename == NULL)
     return;
 
-  char *_extn = strchr(buf->filename, '.'); // TODO : get extension properly
+  char *_extn = strrchr(buf->filename, '.');
+
   for (int j = 0; j < HLDB_SIZE; j++) {
     syntaxhl *s = &HLDB[j];
     int i = 0;

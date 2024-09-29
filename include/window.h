@@ -22,7 +22,6 @@ typedef struct {
 void initWindow(window_t *window);
 void freeWindow(window_t *window);
 
-// TODO : maybe think hard on which buffer to delete, if function is required
 void windowAddBuffer(window_t *window);
 void windowRemoveLastBuffer(window_t *window);
 

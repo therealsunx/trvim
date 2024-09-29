@@ -76,7 +76,6 @@ void editorStatusBarUpdate(void) {
 }
 
 void editorRefreshScreen(void) {
-  editorStatusBarUpdate();
   windowScrollCursor(&editor.window);
   hideCursor();
   clearTerminal();
@@ -193,7 +192,7 @@ int editorAddNewView(char *cmd){
   if(cmd[0] == 'v'){
     windowAddView(&editor.window);
     return 1;
-  } // TODO: maybe later implement horizontal split
+  }
   return 0;
 }
 

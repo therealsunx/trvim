@@ -137,7 +137,7 @@ I still have to make a good looking table instead of list for this section. SO, 
 - = status msg bar
     - = mode indicator
     - = command buffer
-- . vim operation modes
+- = vim operation modes
     - = normal mode
         - = command parsing
         - = mode switching
@@ -167,7 +167,7 @@ I still have to make a good looking table instead of list for this section. SO, 
             - = :wq : save and quit current buffer
             - = :wqa : save and quit all buffers
             - = force quit buffers using ! at end of quit command
-                - e.g. :q! force quits current buffer
+                - e.g. q! force quits current buffer and qa! force quits all buffers
         - = word navigation
             - = w : next word
             - = W : next word (ignore punctuations)
@@ -216,13 +216,14 @@ I still have to make a good looking table instead of list for this section. SO, 
         - = d or x : delete selection
         - = c : cut selection (delete & switch to insert mode)
         - = r {character} : replace selection with following character
-- . bufferize the editor
+- = bufferize the editor
     - = views for buffers
-    - . split {n} views in single screen
-    - . keybinds for opening & editing views & buffers inside editor
-        - . :e {filename} opens the file in buffer and shows in current view
-        - . TAB goes to next buffer in the current view
-        - . CTRL-{h, l} navigates to {left, right} views
-        - . save and quit buffers and views (yet to think of bindings)
+    - = split {n} views in single screen
+    - = keybinds for opening & editing views & buffers inside editor
+        - = :e {filename} opens the file in buffer and shows in current view
+        - = p and n to switch to previous and next buffers in the list in the current view
+        - = \[ and \] navigates to left and right views
+        - = < and > decreases and increases size of split view
+            - = {n}> will increase width by n units
+            - = > will increase width by a chunk (20 units as of now)
 
-- . multiline/block comments (i hate it... may not even implement it... just use // on each line instead of /**/ sh*t)

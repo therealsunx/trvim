@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "editor.h"
 #include "view.h"
@@ -408,6 +409,10 @@ int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
     case 'v':
       editorSwitchMode(mode==VISUAL?VISUAL_LINE:VISUAL);
       return ST_SUCCESS;
+    case 'C':
+      bufferCommentSelection(buf);
+      editorSwitchMode(NORMAL);
+      return ST_SUCCESS;
   }
   return ST_NOOP;
 }
@@ -434,9 +439,11 @@ void _drawStatusBar(view_t *view, abuf *ab){
 
   char lstatus[80], rstatus[80];
   buffer_t *buf = windowGetBufOfView(&editor.window, view);
-  // TODO : truncate filename
-  int len = snprintf(lstatus, sizeof(lstatus), " %.20s [%s] %.3s",
-                     buf->filename ? buf->filename : "[No name]",
+
+  int sl = buf->filename? strlen(buf->filename) : 0;
+  if(sl>16) sl-=16;
+  int len = snprintf(lstatus, sizeof(lstatus), " %s%.20s [%s] %.3s", sl?"...":"",
+                     buf->filename ? &buf->filename[sl] : "[No name]",
                      buf->syntax ? buf->syntax->filetype : "nt",
                      buf->dirty ? "[+]" : "");
   if (len > view->size.x)
@@ -453,10 +460,9 @@ abAppend(ab, lstatus, len);
 }
 
 void _addWelcomeMsg(view_t *view, abuf *ab) {
-  // TODO: better welcome msg
   char wlc[80];
   int wlclen =
-      snprintf(wlc, sizeof(wlc), "therealtxt editor v%s", EDITOR_VERSION);
+      snprintf(wlc, sizeof(wlc), "trvim v%s : A normal looking text editor.", EDITOR_VERSION);
   if (wlclen > view->size.x)
     wlclen = view->size.x;
 

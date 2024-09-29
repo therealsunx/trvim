@@ -129,6 +129,20 @@ int windowOpCmdHandle(window_t *window, parsedcmd_t *cmd){
       if(cmd->repx == 1) cmd->repx = STEP_SZ;
       windowSizeChange(window, cmd->repx);
       return ST_SUCCESS;
+    case 'p':
+      {
+        view_t *view = windowGetCurView(window);
+        view->buf_i += window->bufcount-cmd->repx%window->bufcount;
+        view->buf_i %= window->bufcount;
+        return ST_SUCCESS;
+      }
+    case 'n':
+      {
+        view_t *view = windowGetCurView(window);
+        view->buf_i += cmd->repx;
+        view->buf_i %= window->bufcount;
+        return ST_SUCCESS;
+      }
   }
   return ST_NOOP;
 }
@@ -195,22 +209,29 @@ void windowOpenFile(window_t *window, char *filename){
   view_t *view = &window->views[window->active_i];
 
   // check if any of the open buffers have the file open
+  int _poti = -1; // potential empty buffer
   for(int i=0; i<window->bufcount; i++){
     buffer_t *buf = &window->bufs[i];
     if(buf->filename && strcmp(filename, buf->filename)==0){ // same
       viewSetBuffer(view, i);
       return;
+    } else if(_poti == -1 && buf->row_size==0){
+      _poti = i;
     }
   }
   // open new file into new buffer
-  windowAddBuffer(window);
-  buffer_t *buf = &window->bufs[window->bufcount-1];
+  buffer_t *buf;
+  if(_poti == -1){
+    windowAddBuffer(window);
+    _poti = window->bufcount-1;
+  }
+  buf = &window->bufs[_poti];
   if(!bufferOpenFile(buf, filename)) {
     windowRemoveLastBuffer(window);
     editorSetStatusMsg("\x1b[31mCannot Open file. Enter valid path\x1b[m");
     return;
   }
-  viewSetBuffer(view, window->bufcount-1);
+  viewSetBuffer(view, _poti);
 }
 
 void windowSaveBuffers(window_t *window, int all){

@@ -224,7 +224,7 @@ syntaxhl HLDB[] ={
     HL_NUMBERS|HL_KEYWORD|HL_STRING|HL_PUNCTUATION|HL_COMMENT
   },
   {
-    "java",
+    "kotlin",
     KOTLIN_FMATCH,
     KOTLIN_KEYWORDS,
     NULL,
