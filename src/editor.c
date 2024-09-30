@@ -346,7 +346,7 @@ void editorFindCallback(char *query, int key) {
   static unsigned char *_st_hl = NULL;
 
   view_t *view = editorGetCurrentView();
-  buffer_t *_cbuf = editorGetCurrentBuffer();
+  buffer_t *_cbuf = windowGetBufOfView(&editor.window, view);
 
   if (_st_hl) {
     memcpy(_cbuf->rows[_st_hlind].hlchars, _st_hl,
@@ -385,11 +385,7 @@ void editorFind(char *prompt) {
 
   char *query = editorPrompt(prompt ? prompt : "Search: %s (Esc to cancel)",
                              editorFindCallback);
-  if (query) {
-    if (view->st.query)
-      free(view->st.query);
-    view->st.query = query;
-  } else {
+  if (!query) {
     view->cursor = _st_cur;
     view->offset = _st_off;
   }

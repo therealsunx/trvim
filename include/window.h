@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "view.h"
+#include "buffer.h"
 #include "cmdbar.h"
 #include "cmdstack.h"
 

@@ -442,6 +442,7 @@ void _drawStatusBar(view_t *view, abuf *ab){
 
   int sl = buf->filename? strlen(buf->filename) : 0;
   if(sl>16) sl-=16;
+  else sl = 0;
   int len = snprintf(lstatus, sizeof(lstatus), " %s%.20s [%s] %.3s", sl?"...":"",
                      buf->filename ? &buf->filename[sl] : "[No name]",
                      buf->syntax ? buf->syntax->filetype : "nt",
@@ -527,6 +528,11 @@ void _absJmp(view_t *view, int line){
   buffer_t *buf = windowGetBufOfView(&editor.window, view);
   if(!buf || !buf->row_size) return;
   view->cursor.y = min(line-1, buf->row_size-1);
+
+  // cursor state preservation
+  int _rsz = buf->rows[view->cursor.y].size-1;
+  view->cursor.x = view->st.cursx;
+  view->cursor.x = clamp(view->st.cursx, 0, _rsz);
 }
 
 void _wrdJmp(view_t *view, int flags, int times){

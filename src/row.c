@@ -150,7 +150,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
 
       if(syntax->flags & HL_COMMENT
           && !strncmp(syntax->cmnt_1ls, &row->renderchars[i], strlen(syntax->cmnt_1ls))){
-        memset(&row->hlchars[i], TK_COMMENT, row->size-i);
+        memset(&row->hlchars[i], TK_COMMENT, row->rsize-i);
         break;
       } else if((syntax->flags & HL_STRING)
           && (c == '"' || c == '\'' )){

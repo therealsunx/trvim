@@ -1,6 +1,5 @@
 #pragma once
 
-#include "buffer.h"
 #include "abuf.h"
 #include "utils.h"
 #include "cmdstack.h"
@@ -11,7 +10,6 @@
 
 typedef struct {
   int cursx;
-  char *query;
 } state_t;
 
 typedef struct {
