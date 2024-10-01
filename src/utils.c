@@ -8,21 +8,33 @@
 #include "settings.h"
 #include "utils.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/ioctl.h>
+#endif
+
 extern settings_t settings;
 
-int getWindowSize_(int *rows, int *cols) {
-  static struct winsize ws;
+#ifdef _WIN32
+int getWindowSize(int *rows, int *cols) {
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
 
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12)
-      return -1;
-    return getCursorPosition(rows, cols);
-  }
-  *cols = ws.ws_col;
-  *rows = ws.ws_row;
-  return 0;
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hStdOut == INVALID_HANDLE_VALUE) {
+        return -1;
+    }
+
+    if (!GetConsoleScreenBufferInfo(hStdOut, &csbi)) {
+        return -1;
+    }
+
+    *cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    *rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+
+    return 0;
 }
-
+#else
 int getWindowSize(int *rows, int *cols) {
   static struct winsize ws;
 
@@ -32,6 +44,7 @@ int getWindowSize(int *rows, int *cols) {
   *cols = ws.ws_col;
   return 0;
 }
+#endif
 
 int getCursorPosition(int *rows, int *cols) {
   char buf[32];
