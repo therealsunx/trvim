@@ -1,5 +1,3 @@
-#include <termios.h>
-
 #include "buffer.h"
 #include "cmdstack.h"
 #include "window.h"

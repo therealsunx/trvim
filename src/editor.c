@@ -8,6 +8,12 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <termios.h>
+#endif
+
 #include "editor.h"
 #include "input.h"
 #include "keybinds.h"
@@ -18,6 +24,36 @@ editorconf editor;
 settings_t settings = DEF_SETTINGS;
 struct termios org_termios;
 
+#ifdef _WIN32
+HANDLE hStdin;
+DWORD orgMode;
+
+void disableRawMode(void) {
+  if (!SetConsoleMode(hStdin, orgMode)) {
+    die("SetConsoleMode");
+  }
+}
+
+void enableRawMode(void) {
+  hStdin = GetStdHandle(STD_INPUT_HANDLE);
+  if (hStdin == INVALID_HANDLE_VALUE) {
+    die("GetStdHandle");
+  }
+
+  if (!GetConsoleMode(hStdin, &orgMode)) {
+    die("GetConsoleMode");
+  }
+
+  atexit(disableRawMode);
+
+  DWORD rawMode = orgMode;
+  rawMode &= ~(ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT);
+  
+  if (!SetConsoleMode(hStdin, rawMode)) {
+    die("SetConsoleMode");
+  }
+}
+#else
 void disableRawMode(void) {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &org_termios) == -1)
     die("tcsetattr");
@@ -41,6 +77,7 @@ void enableRawMode(void) {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
     die("tcsetattr");
 }
+#endif
 
 void initEditor(void) {
   editor.mode = NORMAL;
