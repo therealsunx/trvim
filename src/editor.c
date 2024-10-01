@@ -21,7 +21,6 @@
 // -- data --
 editorconf editor;
 settings_t settings = DEF_SETTINGS;
-struct termios org_termios;
 
 #ifdef _WIN32
 HANDLE hStdin;
@@ -53,6 +52,7 @@ void enableRawMode(void) {
   }
 }
 #else
+struct termios org_termios;
 void disableRawMode(void) {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &org_termios) == -1)
     die("tcsetattr");
