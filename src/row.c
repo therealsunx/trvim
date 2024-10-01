@@ -82,7 +82,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
           continue;
         } else if(c == '\\') { // escape chars check
           int _esclen = 1;
-          int _tp = NONE;
+          int _tp = E_NONE;
 
           if(i+1 == row->rsize){
             memset(&row->hlchars[ci], TK_STRING, i-ci);
@@ -91,10 +91,10 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
             char _nc;
             for(int _j=1; _j<=3 && _j+i<row->rsize; _j++){
               _nc = row->renderchars[_j+i];
-              if(_tp==NONE){
+              if(_tp==E_NONE){
                   _esclen++;
-                  if(_nc>='0' && _nc<='9') _tp = DECIMAL;
-                  else if(_nc == 'x') _tp = HEX;
+                  if(_nc>='0' && _nc<='9') _tp = E_DECIMAL;
+                  else if(_nc == 'x') _tp = E_HEX;
                   else break;
               }else if(_nc == '"' || _nc == '\''){
                 in_str = 0;
@@ -103,19 +103,19 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
                 memset(&row->hlchars[i+_esclen], TK_STRING, 1);
                 i += _esclen;
                 ci = i+1;
-                _tp = TERMINATE;
+                _tp = E_TERMINATE;
                 break;
-              }else if(_tp==DECIMAL){
+              }else if(_tp==E_DECIMAL){
                 if(_nc>='0' && _nc<='9') _esclen++;
                 else break;
-              } else if(_tp == HEX){
+              } else if(_tp == E_HEX){
                 if(_nc>='0' && _nc<='9') _esclen++;
                 else if(_nc>='a' && _nc<='f') _esclen++;
                 else break;
               }
             }
           }
-          if(_tp == TERMINATE) continue;
+          if(_tp == E_TERMINATE) continue;
           memset(&row->hlchars[ci], TK_STRING, i-ci);
           memset(&row->hlchars[i], TK_PUNCTUATION, _esclen);
           i += _esclen-1;

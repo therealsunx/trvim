@@ -15,10 +15,10 @@ typedef struct {
 } boundstype;
 
 enum escapechars {
-  NONE=0,
-  DECIMAL,
-  HEX,
-  TERMINATE,
+  E_NONE=0,
+  E_DECIMAL,
+  E_HEX,
+  E_TERMINATE,
 };
 
 enum MODE {
