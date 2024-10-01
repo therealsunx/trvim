@@ -85,7 +85,7 @@ _The colors for syntax highlighting are 8bit ANSI color codes. So if you want to
 2. Make a build directory and navigate to it. This is where build files will go:   
     ```bash
     mkdir build
-    cd trvim
+    cd build
     ```
 3. Make sure you have cmake installed on your system:
     ```bash
@@ -109,6 +109,8 @@ _The colors for syntax highlighting are 8bit ANSI color codes. So if you want to
     trvim
     ```
 
-__Follow this [User Guide](https://github.com/therealsunx/trvim/blob/main/UserGuide.md)__
+__Now Follow this [User Guide](https://github.com/therealsunx/trvim/blob/main/UserGuide.md)__
+
+__Get the Cheat Sheet [here](https://github.com/therealsunx/trvim/blob/main/CheatSheet.md).__
 
 ___Use it just like you use vim.___
