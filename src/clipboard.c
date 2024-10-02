@@ -55,9 +55,16 @@ char *getClipBoard(void) {
   if (pipe) {
     size_t len = 0;
     while (fgets(buffer, sizeof(buffer), pipe)) {
-      len += strlen(buffer);
-      clipboardText = realloc(clipboardText, len + 1);
-      strcat(clipboardText, buffer);
+      size_t blen = strlen(buffer);
+      clipboardText = realloc(clipboardText, len + blen + 1);
+
+      if (!clipboardText) {
+        pclose(pipe);
+        return NULL;
+      }
+      memcpy(clipboardText + len, buffer, blen);
+      len += blen;
+      clipboardText[len] = '\0';
     }
     pclose(pipe);
   }
@@ -77,13 +84,21 @@ char *getClipBoard(void) {
   char *clipboardText = NULL;
   char buffer[128];
   FILE *pipe = popen("xclip -selection clipboard -o", "r");
-  if (!pipe) return NULL;
+  if (!pipe)
+    return NULL;
 
   size_t len = 0;
   while (fgets(buffer, sizeof(buffer), pipe)) {
-    len += strlen(buffer);
-    clipboardText = realloc(clipboardText, len + 1);
-    strcat(clipboardText, buffer);
+    size_t blen = strlen(buffer);
+    clipboardText = realloc(clipboardText, len + blen + 1);
+
+    if (!clipboardText) {
+      pclose(pipe);
+      return NULL;
+    }
+    memcpy(clipboardText + len, buffer, blen);
+    len += blen;
+    clipboardText[len] = '\0';
   }
   pclose(pipe);
   return clipboardText;

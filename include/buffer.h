@@ -22,6 +22,8 @@ int bufferFindChar(buffer_t *buf, vec2 *cursor, char char_, int dirflg);
 int bufferParaNav(buffer_t *buf, vec2 *cursor, int times, int dirflag);
 void bufferReplaceChar(buffer_t *buf, vec2 *cursor, char char_, int repx);
 
+char *bufferSel2Text(buffer_t *buf);
+void bufferCopySelection(buffer_t *buf);
 void bufferUpdateSelection(buffer_t *buf, vec2 cursor, int mode, int flags);
 void bufferSwapSelCursor(buffer_t *buf, vec2 *cursor);
 void bufferDeleteSelection(buffer_t *buf, vec2 *cursor);
@@ -36,7 +38,7 @@ void bufferSwapRow(buffer_t *buf, int index1, int index2);
 int bufferOpenFile(buffer_t *buf, char *filename);
 void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch);
 void bufferInsertNewLine(buffer_t *buf, vec2 *cursor);
-void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text);
+void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text, int dir);
 void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir);
 
 int bufferSave(buffer_t *buf);

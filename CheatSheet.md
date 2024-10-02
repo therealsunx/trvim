@@ -1,18 +1,19 @@
 # Cheat Sheet
 The cheatsheet for the editor - trvim - are listed below. Be fluent and be productive. Enjoy !
 
-
 ## Movement and Navigation
 
 ### Basic Movement
+- Arrow movements available
 - `h` : Move left
 - `j` : Move down
 - `k` : Move up
 - `l` : Move right
-- `{n}(h|j|k|l)` : Move `n` times in the specified direction (e.g., `12j` moves down 12 lines)
+- `{n}*` : Move `n` times in the specified direction (e.g., `12j` moves down 12 lines)
 
 ### Line Navigation
 - `$` : Go to the end of the line
+    - `{n}$` : Go to end of nth line below
 - `0` : Go to the start of the line
 - `_` : Move cursor to the first character in the line
 
@@ -23,21 +24,18 @@ The cheatsheet for the editor - trvim - are listed below. Be fluent and be produ
 - `B` : Move to the previous word, ignoring punctuation
 - `e` : Move to the end of the current word
 - `E` : Move to the end of the word, ignoring punctuation
+    - `{n}*` : Executes the above commands `n` times
 
 ### Paragraph Navigation
 - `{` : Move to the beginning of the previous paragraph
 - `}` : Move to the end of the next paragraph
+    - `{n}*` : Executes the above commands n times
 
 ### Quick Page Navigation
 - `G` : Move to the last line of the file
-- `H` : Move towards the beginning of the visible page
-- `L` : Move towards the end of the visible page
-
-### Absolute Line Jumps
+- `H` : Move towards top of the visible page
+- `L` : Move towards bottom of the visible page
 - `{n}J` : Jump to line `n`
-
-### Relative Line Jumps
-- `{n}$` : Go to the end of the `n`th line below the cursor
 
 ## Mode Switching
 
@@ -59,7 +57,7 @@ The cheatsheet for the editor - trvim - are listed below. Be fluent and be produ
 - **Auto Indentation** and **Arrow-Based Movements** available
 
 ## Visual/Selection Mode
-In this mode you can do almost everything as same as normal mode, but it will select asyou go.
+In this mode you can do almost everything as same as normal mode, but it will select as you go.
 
 - **Basic Selection**
   - `v` : Enter visual mode (character/word selection)
@@ -67,19 +65,32 @@ In this mode you can do almost everything as same as normal mode, but it will se
   
 - **Movement in Visual Mode**
   - Use the same navigation as normal mode, selecting text as you go
-  - `o` or `O` : Move cursor to the other end of the selection
+  - `o` : Move cursor to the other end of the selection
   - `Esc` or `Ctrl+C` : Return to normal mode
 
 - **Actions**
-  - `d` or `x` : Delete the selection
+  - `d` : Delete the selection
   - `c` : Cut selection and enter insert mode
-  - `r {character}` : Replace selection with the specified character
+  - `y` : yank/copy the selected text into system clipboard
+  - `x` : cut the selection into system clipboard (copy and delete selection)
+  - `p` : paste the clipboard content over selected text
+  - `r{char}` : Replace selection with the specified `{char}`
   - `C` : Comment the current selection
+  - `v` : Switch between Visual and Visual-line mode
 
-## Search & Find
+## Search, Find & Replace
 - `/` : Enter search mode (type to search and navigate with arrow keys)
-- `f {char}` : Find the next occurrence of `{char}` after the cursor in the current line
-- `F {char}` : Find the next occurrence of `{char}` before the cursor in the current line
+- `f{char}` : Find the next occurrence of `{char}` after the cursor in the current line
+    - `{n}f{char}` : Find the `n`th next occurrence of `{char}` in the current line
+- `F{char}` : Find the next occurrence of `{char}` before the cursor in the current line
+    - `{n}F{char}` : Find the `n`th previous occurrence of `{char}` in the current line
+- `r{char}` : Replace current character with `{char}`
+    - `{n}r{char}` : Replace next`n` characters with `{char}`
+
+## Programmer's Commands
+- `y` : Copies the selected text into system clipboard
+- `p` : Pastes clipboard content after the cursor
+- `P` : Pastes clipboard content before the cursor
 
 ## Command Mode
 - `:` : Enter command prompt (for advanced operations)
@@ -90,36 +101,25 @@ In this mode you can do almost everything as same as normal mode, but it will se
   - `:qa` : Quit all buffers
   - `:wq` : Save and quit the current buffer
   - `:wqa` : Save and quit all buffers
-  - Append `!` to force quit/save (e.g., `:q!`, `:qa!`)
+  - Append `!` to force quit without saving (e.g., `:q!`, `:qa!`)
+  - `:e {filename}` : Open `{filename}` in a buffer and display in the current view
+  - `:vs` : Split the screen vertically
 
 ## Buffer and View Management
 
 ### Buffer Commands
 - `:e {filename}` : Open `{filename}` in a buffer and display in the current view
-- `p` / `n` : Switch to the previous/next buffer in the current view
+- `b` : Switch to previous buffer in the view
+  - `{n}b` : Switch to `{n}`th previous buffer in the view
+- `n` : Switch to next buffer in the view
+  - `{n}n` : Switch to `{n}`th next buffer in the view
 
 ### Split View
-- Split the screen into `{n}` views
-- `[` / `]` : Move to the left/right view
-- `<` / `>` : Decrease/increase the size of the current view
-  - `{n}>` : Increase the width by `n` units
-  - `>` : Increase the width by a chunk (default: 20 units)
-
-## Command Replication
-- **Number Prefix**: Precede a command with a number to repeat it
-  - `{n}w` : Move to the `n`th next word (e.g., `3w` moves to the third word ahead)
-  - `{n}f{char}` : Go to the `n`th occurrence of `{char}` (e.g., `3fc` moves to the third `c` from the cursor)
-  - `{n}$` : Go to the end of the `n`th line below
-
-## Examples
-Take a look at following examples along with guide toget hold of it.
-- `ea` will go to end of word and start writing after that.
-- `VC` will comment current line, `V2jC` will comment 3 lines
-- `{V}C` will comment the paragraph. (breakdown: `{` moves to empy line before paragraph, `V` switches to selection/visual mode, `}` moves to next end of paragraph, and `C` will comment all selected lines)
-- `wverc` will go to next word and replace it with c. It seems hard knowing this command but breaking it down will make you understand that it is not even a bit hard. `w` will go to start of next word, `v` will switch to selection/visual mode, `e` will go to end of word, (notice that the word will get highlighted now), `rc` will replace selection with c.
-- similiarly, `wvec` will cut the next word and also switches to insert mode, so you can write something in its place instead.
-
-Easy right !!
-_(Note: you can enable such movement bindings on code editors like VS code by installing VIM extensions)_
-
+- `:vs` : Split the screen vertically
+- `]` : Move to view right of current one
+- `[` : Move to view right of current one
+- `,` : Decrease the size of the current view (by 20 units)
+  - `{n},` : Decrease the width by `n` units
+- `.` : Increase the size of the current view (by 20 units)
+  - `{n}.` : Increase the width by `n` units
 

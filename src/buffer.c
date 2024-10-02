@@ -10,6 +10,7 @@
 #include "buffer.h"
 #include "editor.h"
 #include "settings.h"
+#include "clipboard.h"
 
 extern settings_t settings;
 extern syntaxhl HLDB[];
@@ -113,6 +114,45 @@ void bufferReplaceSelection(buffer_t *buf, char c){
       bufferUpdateRow(buf, row);
     }
   }
+}
+
+char *bufferSel2Text(buffer_t *buf){
+  if(!buf) return NULL;
+
+  char *text = NULL;
+  size_t txlen = 0;
+
+  vec2 st = buf->selection.start;
+  vec2 fn = buf->selection.end;
+  for(int y=st.y; y<=fn.y; y++){
+    erow* row = &buf->rows[y];
+    char *s = y==st.y? &row->chars[st.x] : row->chars;
+    int len = y==st.y?
+      (y==fn.y?(fn.x-st.x+1):(row->size-st.x)):
+      (y==fn.y?(fn.x+1):row->size);
+
+    int newline = !(y==fn.y && len!=row->size);
+    if(newline) len++;
+    text = realloc(text, txlen+len+1);
+    if(!text){
+      return NULL;
+    }
+
+    memcpy(text+txlen, s, len);
+    txlen += len;
+    if(newline) {
+      text[txlen-1] = '\n';
+    }
+    text[txlen] = '\0';
+  }
+
+  return text;
+}
+
+void bufferCopySelection(buffer_t *buf){
+  char *txt = bufferSel2Text(buf);
+  setClipBoard(txt);
+  free(txt);
 }
 
 void bufferCommentSelection(buffer_t *buf){
@@ -262,12 +302,12 @@ void bufferDeleteRows(buffer_t *buf, int index, int len) {
   buf->dirty++;
 }
 
-void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text){
+void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text, int dir){
   if(!text || !buf || !cursor) return;
 
   if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
   cursor->y = clamp(cursor->y, 0, buf->row_size-1);
-  cursor->x = clamp(cursor->x, 0, buf->rows[cursor->y].size-1);
+  cursor->x = clamp(cursor->x+(dir==FORWARD), 0, buf->rows[cursor->y].size-(dir==BACKWARD));
 
   char *line = text, *lp = text;
   erow* _row;

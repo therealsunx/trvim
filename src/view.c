@@ -337,11 +337,12 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
     case ':':
       editorCmdPromptProc(":%s");
       return ST_SUCCESS;
+    case 'P':
     case 'p':
       {
         char *text = getClipBoard();
         if(!text) break;
-        bufferInsertText(buf, &view->cursor, text);
+        bufferInsertText(buf, &view->cursor, text, cmd->cmd=='P'?BACKWARD:FORWARD);
         free(text);
       }
       return ST_SUCCESS;
@@ -389,13 +390,32 @@ int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
   buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(cmd->cmd){
     case 'o':
-    case 'O':
       bufferSwapSelCursor(buf, &view->cursor);
       return ST_SUCCESS;
-    case 'd':
     case 'x':
+      bufferCopySelection(buf);
       bufferDeleteSelection(buf, &view->cursor);
       editorSwitchMode(NORMAL);
+      return ST_SUCCESS;
+    case 'y':
+      bufferCopySelection(buf);
+      editorSwitchMode(NORMAL);
+      return ST_SUCCESS;
+    case 'd':
+      bufferDeleteSelection(buf, &view->cursor);
+      editorSwitchMode(NORMAL);
+      return ST_SUCCESS;
+    case 'p':
+    case 'P':
+      {
+        bufferDeleteSelection(buf, &view->cursor);
+        editorSwitchMode(NORMAL);
+
+        char *text = getClipBoard();
+        if(!text) break;
+        bufferInsertText(buf, &view->cursor, text, cmd->cmd=='P'?BACKWARD:FORWARD);
+        free(text);
+      }
       return ST_SUCCESS;
     case 'c':
       {
