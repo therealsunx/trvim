@@ -36,7 +36,9 @@ void bufferSwapRow(buffer_t *buf, int index1, int index2);
 int bufferOpenFile(buffer_t *buf, char *filename);
 void bufferInsertChar(buffer_t *buf, vec2 *cursor, int ch);
 void bufferInsertNewLine(buffer_t *buf, vec2 *cursor);
+void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text);
 void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir);
+
 int bufferSave(buffer_t *buf);
 char *bufferRowtoStr(buffer_t *buf, int *buflen);
 int bufferFind(buffer_t *buf, char *query, vec2 *cursor, int dir);

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "editor.h"
+#include "clipboard.h"
 #include "view.h"
 #include "keybinds.h"
 #include "settings.h"
@@ -336,6 +337,14 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
     case ':':
       editorCmdPromptProc(":%s");
       return ST_SUCCESS;
+    case 'p':
+      {
+        char *text = getClipBoard();
+        if(!text) break;
+        bufferInsertText(buf, &view->cursor, text);
+        free(text);
+      }
+      return ST_SUCCESS;
   }
   return ST_ERR; // IMPORTANT ERR: else garbage buffer
 }
@@ -479,6 +488,7 @@ void _arrMvmnt(view_t *view, int key, int times, int mode){
 
   view->cursor.y = clamp(view->cursor.y, 0, buf->row_size-1);
   int _rsz = buf->rows[view->cursor.y].size-(mode!=INSERT);
+
   switch (key) {
     case ARROW_LEFT:
       view->st.cursx = max(view->cursor.x-times, 0);
@@ -503,10 +513,7 @@ void _arrMvmnt(view_t *view, int key, int times, int mode){
       view->st.cursx = firstCharIndex(buf->rows[view->cursor.y].chars);
       break;
   }
-  // cursor state preservation
-  _rsz = buf->rows[view->cursor.y].size-(mode!=INSERT);
-  view->cursor.x = view->st.cursx;
-  view->cursor.x = clamp(view->st.cursx, 0, _rsz);
+  _cursST(view, mode);
 }
 
 void _pageMvmnt(view_t *view, int key){
@@ -529,10 +536,7 @@ void _absJmp(view_t *view, int line){
   if(!buf || !buf->row_size) return;
   view->cursor.y = min(line-1, buf->row_size-1);
 
-  // cursor state preservation
-  int _rsz = buf->rows[view->cursor.y].size-1;
-  view->cursor.x = view->st.cursx;
-  view->cursor.x = clamp(view->st.cursx, 0, _rsz);
+  _cursST(view, NORMAL);
 }
 
 void _wrdJmp(view_t *view, int flags, int times){
@@ -557,4 +561,15 @@ void _miscJmp(view_t *view, int key){
       break;      
   }
   view->cursor.y = clamp(view->cursor.y, 0, buf->row_size-1);
+  _cursST(view, NORMAL);
+}
+
+void _cursST(view_t *view, int mode){
+  buffer_t *buf = windowGetBufOfView(&editor.window, view);
+  if(!buf || !buf->row_size) return;
+
+  // cursor state preservation
+  int _rsz = buf->rows[view->cursor.y].size-(mode!=INSERT);
+  view->cursor.x = view->st.cursx;
+  view->cursor.x = clamp(view->st.cursx, 0, _rsz);
 }

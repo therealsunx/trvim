@@ -82,26 +82,38 @@ _The colors for syntax highlighting are 8bit ANSI color codes. So if you want to
     ```bash
     git clone https://github.com/therealsunx/trvim
     ```
-2. Make a build directory and navigate to it. This is where build files will go:   
+
+2. Make sure you have dependencies `cmake` & `make` installed on your system:
+    1. For Linux, extra dependency xclip is required to interact with system clipboard.
+        ```bash
+        sudo apt install cmake make xclip
+        ```
+    2. For MacOs
+        ```bash
+        brew install cmake make
+        ```
+    3. For Windows
+        - __Cmake__ : Download from [here](https://cmake.org/download/)._
+        - __Make__ : Download from [here](https://gnuwin32.sourceforge.net/packages/make.htm).
+
+3. Make a build directory and navigate to it. This is where build files will go:   
     ```bash
     mkdir build
     cd build
     ```
-3. Make sure you have cmake installed on your system:
-    ```bash
-    cmake --version
-    ```
-    _If you don't have it, then install it from [here](https://cmake.org/download/)._
+
 4. Run cmake in project directory form build directory.
     ```bash
     cmake ..
     ```
     _This will have completed the setup phase. You can modify code without any issues._
+
 5. In order to build the project, you can run `make`.
     If you want to ___install it in your system___, to access it from anywhere, then run following:
     ```bash
     make install
     ```
+
 3. Launch the editor from your terminal:
     ```bash
     trvim filename.c

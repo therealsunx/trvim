@@ -18,3 +18,4 @@ int rowCursorToRenderX(erow *row, int cursor_x);
 int rowRendertoCursorX(erow *row, int render_x);
 void rowFree(erow *row);
 void rowAppendString(erow *row, char *s, size_t len);
+void rowInsertString(erow *row, int index, char *s, size_t len);

@@ -262,6 +262,31 @@ void bufferDeleteRows(buffer_t *buf, int index, int len) {
   buf->dirty++;
 }
 
+void bufferInsertText(buffer_t *buf, vec2 *cursor, char *text){
+  if(!text || !buf || !cursor) return;
+
+  if(!buf->row_size) bufferInsertRow(buf, 0, "", 0);
+  cursor->y = clamp(cursor->y, 0, buf->row_size-1);
+  cursor->x = clamp(cursor->x, 0, buf->rows[cursor->y].size-1);
+
+  char *line = text, *lp = text;
+  erow* _row;
+  for(;*lp;lp++){
+    if(*lp == '\n'){
+      bufferInsertNewLine(buf, cursor);
+      _row = &buf->rows[cursor->y-1];
+      rowAppendString(_row, line, lp-line);
+      bufferUpdateRow(buf, _row);
+      line = lp+1;
+    }
+  }
+  if(line<lp) {
+    _row = &buf->rows[cursor->y];
+    rowInsertString(_row, cursor->x, line, lp-line);
+    bufferUpdateRow(buf, _row);
+  }
+}
+
 int bufferOpenFile(buffer_t *buf, char *filename) {
   free(buf->filename);
 

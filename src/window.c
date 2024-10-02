@@ -38,6 +38,8 @@ void _onSizeUpdate(window_t *window){
 }
 
 void initWindow(window_t *window){
+  window->bufs = NULL;
+  window->views = NULL;
   window->bufcount = 0;
   window->vcount = 0;
   _winUpdateCheck(window);
@@ -54,9 +56,7 @@ void freeWindow(window_t *window){
 
 void windowAddBuffer(window_t *window){
   window->bufcount++;
-  window->bufs = window->bufs?
-    realloc(window->bufs, window->bufcount*sizeof(buffer_t)):
-    malloc(window->bufcount*sizeof(buffer_t));
+  window->bufs = realloc(window->bufs, window->bufcount*sizeof(buffer_t));
   buffer_t *buf = &window->bufs[window->bufcount-1];
   initBuffer(buf);
   if(window->views)
@@ -90,9 +90,7 @@ void windowAddView(window_t *window){
   if(window->bufcount == 0) die("no buffer found");
 
   window->vcount++;
-  window->views = window->views?
-    realloc(window->views, window->vcount*sizeof(view_t)):
-    malloc(window->vcount*sizeof(view_t));
+  window->views = realloc(window->views, window->vcount*sizeof(view_t));
 
   int bi = window->vcount==1?0:windowGetCurView(window)->buf_i;
   window->active_i = window->vcount-1;
@@ -128,7 +126,7 @@ int windowOpCmdHandle(window_t *window, parsedcmd_t *cmd){
       if(cmd->repx == 1) cmd->repx = STEP_SZ;
       windowSizeChange(window, cmd->repx);
       return ST_SUCCESS;
-    case 'p':
+    case 'b':
       {
         view_t *view = windowGetCurView(window);
         view->buf_i += window->bufcount-cmd->repx%window->bufcount;

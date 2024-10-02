@@ -217,6 +217,8 @@ void rowDeleteCharacters(erow *row, int start, int len){
 }
 
 void rowAppendString(erow *row, char *s, size_t len){
+  if(!s || len<=0) return;
+
   row->chars = realloc(row->chars, row->size + len + 1);
   memcpy(&row->chars[row->size], s, len);
   row->size += len;
@@ -224,3 +226,13 @@ void rowAppendString(erow *row, char *s, size_t len){
   rowUpdate(row);
 }
 
+void rowInsertString(erow *row, int index, char *s, size_t len){
+  if(!s || len<=0 || !row) return;
+
+  row->chars = realloc(row->chars, row->size+len+1);
+  memmove(&row->chars[index+len], &row->chars[index], row->size-index);
+  memcpy(&row->chars[index], s, len);
+  row->size+=len;
+  row->chars[row->size] = '\0';
+  rowUpdate(row);
+}

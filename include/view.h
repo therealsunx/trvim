@@ -58,4 +58,5 @@ void _absJmp(view_t *view, int line);
 void _inlineMvmt(view_t *view, int key, int times);
 void _wrdJmp(view_t *view, int flags, int times);
 void _miscJmp(view_t *view, int key);
+void _cursST(view_t *view, int mode);
 
