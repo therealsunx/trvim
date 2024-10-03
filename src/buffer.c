@@ -172,6 +172,7 @@ void bufferCommentSelection(buffer_t *buf){
 }
 
 int bufferWordJump(buffer_t *buf, vec2 *cursor, int flags){
+  if(!buf || !cursor || !buf->row_size) return 0;
   int dir = flags & JMP_BACK? -1: 1;
   vec2 crs = *cursor, lnsp = *cursor;
 
@@ -397,6 +398,7 @@ void bufferSwapRow(buffer_t *buf, int index1, int index2){
 }
 
 void bufferDelChar(buffer_t *buf, vec2 *cursor, int dir){
+  if(!buf) return;
   if (cursor->y >= buf->row_size)
     return;
 

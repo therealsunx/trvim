@@ -310,11 +310,43 @@ int viewVisCmdHandle(view_t *view, int key){
 int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
   buffer_t *buf = windowGetBufOfView(&editor.window, view);
   switch(cmd->cmd){
+    case 'd':
+      editorSwitchMode(VISUAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 0);
+      _arrMvmnt(view, ARROW_RIGHT, cmd->repx-1, NORMAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 1);
+      bufferDeleteSelection(buf, &view->cursor);
+      break;
+    case 'D':
+      editorSwitchMode(VISUAL_LINE);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 0);
+      _arrMvmnt(view, ARROW_DOWN, cmd->repx-1, NORMAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 1);
+      bufferDeleteSelection(buf, &view->cursor);
+      editorSwitchMode(NORMAL);
+      break;
+    case 'x':
+      editorSwitchMode(VISUAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 0);
+      _arrMvmnt(view, ARROW_RIGHT, cmd->repx-1, NORMAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 1);
+      bufferCopySelection(buf);
+      bufferDeleteSelection(buf, &view->cursor);
+      break;
+    case 'X':
+      editorSwitchMode(VISUAL_LINE);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 0);
+      _arrMvmnt(view, ARROW_DOWN, cmd->repx-1, NORMAL);
+      bufferUpdateSelection(buf, view->cursor, VISUAL_LINE, 1);
+      bufferCopySelection(buf);
+      bufferDeleteSelection(buf, &view->cursor);
+      editorSwitchMode(NORMAL);
+      break;
     case 'r':
       if (cmd->arg1 == 0) return ST_WAIT;
       if (cmd->arg1 >= 127) return ST_ERR;
       bufferReplaceChar(buf, &view->cursor, cmd->arg1, cmd->repx);
-      return ST_SUCCESS;
+      break;
     case 'f':
     case 'F':
       {
@@ -323,20 +355,20 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
         int flg = cmd->cmd=='F'?JMP_BACK:0;
         while(cmd->repx--
             && bufferFindChar(buf, &view->cursor, cmd->arg1, flg)){}
-        return ST_SUCCESS;
+        break;
       }
     case '{':
       bufferParaNav(buf, &view->cursor, cmd->repx, JMP_BACK);
-      return ST_SUCCESS;
+      break;
     case '}':
       bufferParaNav(buf, &view->cursor, cmd->repx, 0);
-      return ST_SUCCESS;
+      break;
     case '/':
       editorFind("/%s");
-      return ST_SUCCESS;
+      break;
     case ':':
       editorCmdPromptProc(":%s");
-      return ST_SUCCESS;
+      break;
     case 'P':
     case 'p':
       {
@@ -345,9 +377,13 @@ int viewMiscCmdHandle(view_t *view, parsedcmd_t *cmd){
         bufferInsertText(buf, &view->cursor, text, cmd->cmd=='P'?BACKWARD:FORWARD);
         free(text);
       }
-      return ST_SUCCESS;
+      break;
+    default:
+      return ST_ERR;
   }
-  return ST_ERR; // IMPORTANT ERR: else garbage buffer
+  view->st.cursx = view->cursor.x;
+  _cursST(view, NORMAL);
+  return ST_SUCCESS;
 }
 
 int viewInsertEdit(view_t *view, int key){
@@ -391,32 +427,33 @@ int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
   switch(cmd->cmd){
     case 'o':
       bufferSwapSelCursor(buf, &view->cursor);
-      return ST_SUCCESS;
+      break;
     case 'x':
       bufferCopySelection(buf);
       bufferDeleteSelection(buf, &view->cursor);
       editorSwitchMode(NORMAL);
-      return ST_SUCCESS;
+      break;
     case 'y':
       bufferCopySelection(buf);
       editorSwitchMode(NORMAL);
-      return ST_SUCCESS;
+      break;
     case 'd':
       bufferDeleteSelection(buf, &view->cursor);
       editorSwitchMode(NORMAL);
-      return ST_SUCCESS;
+      break;
     case 'p':
     case 'P':
       {
+        char *text = getClipBoard();
+        bufferCopySelection(buf);
         bufferDeleteSelection(buf, &view->cursor);
         editorSwitchMode(NORMAL);
 
-        char *text = getClipBoard();
         if(!text) break;
-        bufferInsertText(buf, &view->cursor, text, cmd->cmd=='P'?BACKWARD:FORWARD);
+        bufferInsertText(buf, &view->cursor, text, BACKWARD);
         free(text);
       }
-      return ST_SUCCESS;
+      break;
     case 'c':
       {
         int ec = view->cursor.y;
@@ -429,21 +466,25 @@ int viewVisualOp(view_t *view, parsedcmd_t *cmd, int mode){
           bufferInsertNewLine(buf, &view->cursor);
         }
       }
-      return ST_SUCCESS;
+      break;
     case 'r':
       if(cmd->arg1 == 0) return ST_WAIT;
       if(cmd->arg1 >= 127) return ST_ERR;
       bufferReplaceSelection(buf, cmd->arg1);
-      return ST_SUCCESS;
+      break;
     case 'v':
       editorSwitchMode(mode==VISUAL?VISUAL_LINE:VISUAL);
-      return ST_SUCCESS;
+      break;
     case 'C':
       bufferCommentSelection(buf);
       editorSwitchMode(NORMAL);
-      return ST_SUCCESS;
+      break;
+    default:
+      return ST_NOOP;
   }
-  return ST_NOOP;
+  view->st.cursx = view->cursor.x;
+  _cursST(view, mode);
+  return ST_SUCCESS;
 }
 
 void viewUpdateSelection(view_t *view, int mode, int flags){

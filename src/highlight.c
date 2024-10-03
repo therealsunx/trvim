@@ -3,7 +3,7 @@
 
 char *C_FMATCH[] = {".c", ".h", ".cpp", ".hpp", NULL};
 char *C_KEYWORDS[] = {
-  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", 
+  "int|", "long|", "double|", "float|", "char|", "unsigned|", "signed|", "void|", "size_t",
   "switch", "if", "while", "for", "break", "continue", "return", "else",
   "struct", "union", "typedef", "static", "enum", "class", "case", "extern", "default",
   NULL
@@ -125,7 +125,7 @@ char *KOTLIN_KEYWORDS[] = {
 
 syntaxhl HLDB[] ={
   {
-    "c",
+    "c/c++",
     C_FMATCH,
     C_KEYWORDS,
     C_PREPROC,

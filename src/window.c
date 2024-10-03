@@ -126,14 +126,14 @@ int windowOpCmdHandle(window_t *window, parsedcmd_t *cmd){
       if(cmd->repx == 1) cmd->repx = STEP_SZ;
       windowSizeChange(window, cmd->repx);
       return ST_SUCCESS;
-    case 'b':
+    case '<':
       {
         view_t *view = windowGetCurView(window);
         view->buf_i += window->bufcount-cmd->repx%window->bufcount;
         view->buf_i %= window->bufcount;
         return ST_SUCCESS;
       }
-    case 'n':
+    case '>':
       {
         view_t *view = windowGetCurView(window);
         view->buf_i += cmd->repx;
