@@ -62,9 +62,7 @@ void disableRawMode(void) {
 void enableRawMode(void) {
   if (tcgetattr(STDIN_FILENO, &org_termios) == -1)
     die("tcsetattr");
-
   atexit(disableRawMode);
-
   struct termios raw = org_termios;
   raw.c_iflag &= ~(BRKINT | INPCK | ISTRIP | IXON | ICRNL);
   raw.c_lflag &= ~(ECHO | IEXTEN | ICANON | ISIG);
@@ -72,7 +70,6 @@ void enableRawMode(void) {
   raw.c_cflag |= (CS8);
   raw.c_cc[VMIN] = 0;
   raw.c_cc[VTIME] = 1;
-
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
     die("tcsetattr");
 }
@@ -83,7 +80,6 @@ void initEditor(void) {
   initWindow(&editor.window);
   initCmdBar(&editor.cmdbar);
   initStack(&editor.cmdstk);
-
   atexit(freeEditor);
 }
 

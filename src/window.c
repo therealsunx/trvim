@@ -224,7 +224,7 @@ void windowOpenFile(window_t *window, char *filename){
   }
   buf = &window->bufs[_poti];
   if(!bufferOpenFile(buf, filename)) {
-    windowRemoveLastBuffer(window);
+    //windowRemoveLastBuffer(window); // why this
     editorSetStatusMsg("\x1b[31mCannot Open file. Enter valid path\x1b[m");
     return;
   }
