@@ -31,6 +31,7 @@ Here are the key features supported by this editor.
 | **Lightweight & Fast**          | Optimized for speed and minimal memory usage, even when handling large files.                           |
 | **Multiple Language Support**   | Supports a wide range of programming languages with easy language switching.                             |
 | **Faster Navigation**           | Has easy to use keybinds (similiar to vim), with zero-mouse requirement, allowing quicker navigation.   |
+| **Screen Split**                | Has split-screen view supported        |
 
 
 ## **Syntax Highlighting**
@@ -56,23 +57,7 @@ The editor supports syntax highlighting for the following languages:
 | **Go**          | `.go`               |
 | **Java**        | `.java`             |
 | **Dart**        | `.dart`             |
-| **Go**          | `.kt`, `.kts`       |
-
-
-### **Syntax Flags**
-Syntax highlighting is controlled via several flags that allow for customizable styling:
-
-| Flag                 | Description                                                                |
-|----------------------|----------------------------------------------------------------------------|
-| `HL_NUMBERS`         | Highlights numeric literals (e.g., `123`, `0xFF`).                          |
-| `HL_PREPROC`         | Highlights preprocessor-like directives (e.g., `#include`, `import`).       |
-| `HL_KEYWORD`         | Highlights language keywords (e.g., `for`, `if`, `while`).                  |
-| `HL_PUNCTUATION`     | Highlights punctuation and symbols (e.g., `{`, `}`, `;`).                   |
-| `HL_COMMENT`         | Highlights single-line and multi-line comments.                             |
-| `HL_STRING`          | Highlights string literals.                                                 |
-
-_If you want to customize your own version of **trvim**, then you can make use of this information to set up highlighting rules in `highlight.c`. Otherwise ignore this information._
-_The colors for syntax highlighting are 8bit ANSI color codes. So if you want to customize colors follow this [wikipedia article on ANSI codes.](https://en.wikipedia.org/wiki/ANSI_escape_code)_
+| **Kotlin**      | `.kt`, `.kts`       |
 
 
 ## **Getting Started**
