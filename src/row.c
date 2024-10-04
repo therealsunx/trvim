@@ -127,6 +127,7 @@ void rowUpdateSyntax(erow *row, syntaxhl *syntax){
       } else if(ci != i){
         if(syntax->flags & HL_PREPROC && ci>0 && row->renderchars[ci-1] == syntax->preprocbeg){
           int __hl = 0, _len = i-ci;
+          if(i+1 == row->rsize) _len++;
           for(int j=0; syntax->preprocs[j]; j++){
             int _klen  = strlen(syntax->preprocs[j]);
             if(_klen == _len &&  !strncmp(&row->renderchars[ci], syntax->preprocs[j], _klen)){
