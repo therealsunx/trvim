@@ -28,6 +28,30 @@ Now that you are inside the editor, let's talk about what you're seeing.
 
 - If you have empty file open or no file open at all, you will see a editor entry message at the middle of the screen.
 
+_Go ahead and open a file_
+
+- __LINE COLUMN__
+On the left side of the screen, you can see that there is a column showing some numbers, what do they represent?
+    - Only the current line you are on has absolute line number
+    - All of other lines have line numbers relative to the current line.
+    - _Why this?_: It is because it makes it easier for navigation.
+    - Let's take an example:
+        - Let's say, You want to go to line and edit something.
+        - It is not optimal to press arrow key multiple times to go to that line when you can just do it at once.
+        - If you know that destination is 15 lines above you, then simply typing `15` and `arrow-up` should take you there.
+        - Just so it happens, __trvim__ supports such features.
+        - `15k` or `15↑` will take you 15 lines above. `20j` or `20↓` will take you 20 lines down.
+
+- __FILE INFO__
+    - There is a bar on the bottom of each view, showing the information about file.
+    - First off there is, filename.
+    - Alongside it, there is a filetype indicator and dirty indicator. (_Dirty indicator indicates that changes has not been saved._)
+    - On the right side, there is cursor information.
+
+- __COMMAND BAR__
+    - On the bottom of the editor, there is a big bar which is used for taking inputs, entering special commands, etc.
+    - It is also used to display some important messages
+
 You can see that the cursor is `block` when you open the file. This is for better visibility of cursor while moving around the editor. This means you are currently in normal mode.
 When you switch to `INSERT` mode, then cursor becomes thin.
 

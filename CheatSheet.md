@@ -110,6 +110,7 @@ In this mode you can do almost everything as same as normal mode, but it will se
 
 ## Command Mode
 - `:` : Enter command prompt (for advanced operations)
+  - `Esc` : Exits the command mode
   - `:{n}` : Go to line number `{n}`
   - `:w` : Save the current buffer to the file
   - `:wa` : Save all buffers to files
