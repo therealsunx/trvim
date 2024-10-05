@@ -129,7 +129,7 @@ void viewDraw(view_t *view, abuf* ab, int selflag) {
           if(sstate.x == BEFORE){
             if(i>=sel.start.x){
               sstate.x = INBOUND;
-              abAppend(ab, "\x1b[48:5:238m", 12);
+              abAppend(ab, "\x1b[100m", 6);
             }
           } else if(sstate.x == INBOUND){
             if(_fr == sel.end.y && i>sel.end.x){
@@ -138,7 +138,7 @@ void viewDraw(view_t *view, abuf* ab, int selflag) {
             }
           } // no need to process after AFTER
           if(i==0 && sstate.x == INBOUND){
-            abAppend(ab, "\x1b[48:5:238m", 12);
+            abAppend(ab, "\x1b[100m", 6);
           }
         }
 
