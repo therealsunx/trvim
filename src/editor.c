@@ -110,7 +110,6 @@ void editorStatusBarUpdate(void) {
 void editorRefreshScreen(void) {
   windowScrollCursor(&editor.window);
   hideCursor();
-  clearTerminal();
   windowDrawViews(&editor.window, editor.mode);
   windowDrawCmdBar(&editor.window, &editor.cmdbar, &editor.cmdstk);
   windowShowCursor(&editor.window, editor.mode);

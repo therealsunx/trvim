@@ -163,10 +163,14 @@ void windowSizeChange(window_t *window, int delta){
 }
 
 void windowDrawViews(window_t *window, int mode){
+  abuf ab = ABUF_INIT;
   int _selflag = mode == VISUAL || mode == VISUAL_LINE;
   for(int i=0; i<window->vcount;i++){
-    viewDraw(&window->views[i], i==window->active_i?_selflag:0);
+    viewDraw(&window->views[i], &ab, i==window->active_i?_selflag:0);
   }
+  clearTerminal();
+  writeBuf(&ab);
+  abFree(&ab);
 }
 
 void windowDrawCmdBar(window_t *window, cmdbar_t *cmdbar, cmdstack_t *cmdstk){

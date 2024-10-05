@@ -63,8 +63,7 @@ void _addlcol(view_t *view, abuf *ab, int linenum) {
   abAppend(ab, "\x1b[m", 3);
 }
 
-void viewDraw(view_t *view, int selflag) {
-  abuf ab = ABUF_INIT;
+void viewDraw(view_t *view, abuf* ab, int selflag) {
   buffer_t *buf = windowGetBufOfView(&editor.window, view);
 
   vec2 sstate = {BEFORE, BEFORE}; // for selection mode
@@ -76,14 +75,14 @@ void viewDraw(view_t *view, int selflag) {
   }
 
   for (int y = 0; y < (view->size.y-STATUSBAR_SZ); y++) {
-    abPutCursor(&ab, view->position.x, view->position.y+y);
+    abPutCursor(ab, view->position.x, view->position.y+y);
 
     int _fr = y + view->offset.y;
-    _addlcol(view, &ab, _fr);
+    _addlcol(view, ab, _fr);
 
     if (_fr >= buf->row_size) {
       if (buf->row_size == 0 && y == view->size.y / 3)
-        _addWelcomeMsg(view, &ab);
+        _addWelcomeMsg(view, ab);
     } else {
       int len = clamp(buf->rows[_fr].rsize-view->offset.x, 0, view->size.x-view->lcols);
 
@@ -102,10 +101,10 @@ void viewDraw(view_t *view, int selflag) {
       for(int i=0; i<len; i++){
         int _clr = hlTokentoColorIndex(hl[i]);
         if(hl[i] != _ptk){
-          if (_ptk == TK_KEYWORD3) abAppend(&ab, "\x1b[2m", 4);
+          if (_ptk == TK_KEYWORD3) abAppend(ab, "\x1b[2m", 4);
           if (_ptk == TK_MATCH) {
             if (sstate.y == INBOUND) sstate.x =BEFORE; // this will force recheck of selection bound
-            abAppend(&ab, "\x1b[m", 3);
+            abAppend(ab, "\x1b[m", 3);
           }
 
           char _tcstr[24];
@@ -121,7 +120,7 @@ void viewDraw(view_t *view, int selflag) {
               _cl = snprintf(_tcstr, sizeof(_tcstr), "\x1b[38;5;%dm", _clr);
           }
 
-          abAppend(&ab, _tcstr, _cl);
+          abAppend(ab, _tcstr, _cl);
           _ptk = hl[i];
         }
 
@@ -130,27 +129,25 @@ void viewDraw(view_t *view, int selflag) {
           if(sstate.x == BEFORE){
             if(i>=sel.start.x){
               sstate.x = INBOUND;
-              abAppend(&ab, "\x1b[48:5:238m", 12);
+              abAppend(ab, "\x1b[48:5:238m", 12);
             }
           } else if(sstate.x == INBOUND){
             if(_fr == sel.end.y && i>sel.end.x){
               sstate.x = AFTER;
-              abAppend(&ab, "\x1b[49m", 5);
+              abAppend(ab, "\x1b[49m", 5);
             }
           } // no need to process after AFTER
           if(i==0 && sstate.x == INBOUND){
-            abAppend(&ab, "\x1b[48:5:238m", 12);
+            abAppend(ab, "\x1b[48:5:238m", 12);
           }
         }
 
-        abAppend(&ab, &ch[i], 1);
+        abAppend(ab, &ch[i], 1);
       }
     }
-    abAppend(&ab, "\x1b[m", 3);
+    abAppend(ab, "\x1b[m", 3);
   }
-  _drawStatusBar(view, &ab);
-  writeBuf(&ab);
-  abFree(&ab);
+  _drawStatusBar(view, ab);
 }
 
 void viewShowCursor(view_t *view, int mode){

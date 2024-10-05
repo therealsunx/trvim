@@ -25,7 +25,7 @@ void initView(view_t *view, int buf_i, vec2 size, vec2 position);
 void viewSetDims(view_t *view, vec2 size, vec2 position);
 void viewSetBuffer(view_t *view, int buf_i);
 
-void viewDraw(view_t *view, int selflag);
+void viewDraw(view_t *view, abuf *ab, int selflag);
 void viewShowCursor(view_t *view, int mode);
 void viewScrollCursor(view_t *view);
 

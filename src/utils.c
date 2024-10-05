@@ -173,7 +173,12 @@ int checkPoint(boundstype bounds, vec2 point){
 }
 
 void clearTerminal(void){
-  write(STDIN_FILENO, "\x1b[2J", 4);
+  //write(STDIN_FILENO, "\x1b[2J", 4);
+#ifdef _WIN32
+  system("cls");
+#else
+  system("clear");
+#endif
   write(STDIN_FILENO, "\x1b[H", 3);
 }
 
